@@ -2,7 +2,9 @@
 
 Repository: https://github.com/stryker-max/digitales-rezeptbuch
 
-Vorgesehene App-Adresse nach erfolgreicher Veröffentlichung: https://stryker-max.github.io/digitales-rezeptbuch/
+**Veröffentlichte und geprüfte App:** https://stryker-max.github.io/digitales-rezeptbuch/
+
+Erste Veröffentlichung am 27. Oktober 2026 erfolgreich: [GitHub-Build und Deployment](https://github.com/stryker-max/digitales-rezeptbuch/actions/runs/40521070167), Quellstand `33760f5`. Die echte HTTPS-Adresse wurde anschließend im Browser geöffnet; das vollständige Offlinepaket wurde dort erfolgreich geprüft. App und Repository sind öffentlich; persönliche Rezeptdaten wurden nicht hochgeladen.
 
 GitHub Pages stellt die browserlokale App über HTTPS bereit. Eigene Rezepte, Fotos und PDFs werden dort weiterhin ausschließlich im jeweiligen Browser gespeichert. Die öffentliche Website enthält App-Code und künstliche Beispiele, keine persönliche Sammlung. Auf einem zweiten Gerät gibt es einen eigenen Bestand; Sicherungsdatei bewusst übertragen und importieren. Keine automatische Cloud-Synchronisierung.
 
@@ -26,4 +28,4 @@ Geprüft im isolierten Chrome-Browser unter echtem Unterpfad: Beispielbild, manu
 
 Auf dem iPhone nach erfolgreicher Veröffentlichung in Safari öffnen, über Teilen → Zum Home-Bildschirm hinzufügen. Vor Offline-Nutzung einmal online öffnen und „Offline-Paket prüfen“ verwenden. Browserdaten regelmäßig über „Sammlung sichern“ unabhängig aufbewahren. Lokale Rezepte vom Rechner zunächst exportieren und auf der Webadresse importieren; sie wechseln nicht automatisch auf den neuen Ursprung.
 
-Quellen: [GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site), [Vite: GitHub Pages](https://vite.dev/guide/static-deploy.html#github-pages), am 27. Oktober 2026 geöffnet. Veröffentlichungserfolg wird separat anhand tatsächlicher GitHub-Deploymentdaten und erreichbarer Website geprüft.
+Quellen: [GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site), [Vite: GitHub Pages](https://vite.dev/guide/static-deploy.html#github-pages), am 27. Oktober 2026 geöffnet. Veröffentlichungserfolg anhand tatsächlicher GitHub-Deploymentdaten und erreichbarer Website geprüft.

@@ -3,6 +3,7 @@ private/
 uploads/
 backups/
 exports/
+outputs/
 test-data/private/
 *.log
 *.tsbuildinfo

@@ -2,9 +2,15 @@
 
 **Lokale App in Entwicklung · 27. Oktober 2026 · Weiterbau ab `1988cd5`**
 
-Next.js-/React-App für eigene Foto-/PDF-Rezepte, Originalvergleich, Kochen, Wochenplan und Einkauf. Navy-/Blau-Oberfläche mit großen Schaltflächen und festen Kochpfeilen. Lokal benutzbar; noch keine fertig abgenommene oder veröffentlichte Cloud-Anwendung.
+Next.js-/React-App für eigene Foto-/PDF-Rezepte, Originalvergleich, Kochen, Wochenplan und Einkauf. Navy-/Blau-Oberfläche mit großen Schaltflächen und festen Kochpfeilen. Lokal benutzbar und als browserlokale Webversion veröffentlicht; noch keine fertig abgenommene Cloud-Anwendung mit geräteübergreifender Sammlung.
 
-**Webversion:** Veröffentlichung über [GitHub Pages](docs/GITHUB-PAGES.md) mit derselben browserlokalen Datenhaltung. Der zusätzliche statische Build veröffentlicht keine privaten Rezepte und enthält keinen KI-Server.
+## App öffnen
+
+**[Digitales Rezeptbuch starten](https://stryker-max.github.io/digitales-rezeptbuch/)**
+
+Auf dem iPhone in Safari öffnen und über **Teilen → Zum Home-Bildschirm** hinzufügen. Neue Rezepte über „Rezept hinzufügen“ selbst aus Foto/PDF übertragen. Vorhandene lokale Sammlung zuerst sichern und auf dieser Webadresse importieren. Eigene Rezepte bleiben im jeweiligen Browser; regelmäßig „Sammlung sichern“ verwenden.
+
+Die [GitHub-Pages-Webversion](docs/GITHUB-PAGES.md) enthält App-Code und künstliche Beispiele. KI-Abschrift benötigt weiterhin einen gesonderten Server; die Webversion bietet manuelle Übernahme. Keine automatische Cloud-Synchronisierung.
 
 ## Starten
 
@@ -74,7 +80,7 @@ Browsertests: isolierte Chrome-Profile, Produktionsserver auf Ports 3118/3119; C
 2. Echten versionierten Lebensmittelkatalog samt Lizenz importieren, sichere automatische Zuordnung und belegte Faktoren ergänzen.
 3. Eigentümerkonto, private serverseitige Sammlung, RLS für Tabellen/Dateien, konfliktgeschützte Gerätesynchronisierung und unabhängige Sicherungen bauen und mit zwei Konten prüfen. Bestehende lokale Bestände erst exportieren und nach validierter Migration übernehmen.
 4. Echte iPhone-/iPad-Abnahme einschließlich Kamera, Offline/Updates, Speicher, VoiceOver, Timer und Wake Lock.
-5. Danach HTTPS-Hosting und Kostenrahmen einrichten und privat veröffentlichen. Keine externe Veröffentlichung oder produktive Cloud eingerichtet.
+5. Danach die vollständige private Cloud mit Analyseserver und Sicherung einrichten. Die browserlokale Webversion ist bereits per HTTPS auf GitHub Pages veröffentlicht; eine produktive geräteübergreifende Rezeptdatenbank ist noch nicht eingerichtet.
 
 Weitere offene Zielpunkte: Wochen-/Datumsverwaltung, mehrere Mahlzeitkomponenten/Chargen, Resteverteilung, Vorratszuordnung, verwaiste Käufe, Druckansicht, Papierkorb, Kochhistorie und Konflikte zwischen gleichzeitig bearbeitenden Browserfenstern.
 
