@@ -1,3 +1,4 @@
+import { PostgresProfiles } from "./postgres-profiles.ts";
 import { createChatGPT, type ChatGPTClient } from "@rezeptbuch/chatgpt-local";
 import { isAbsolute } from "node:path";
 import { windowsEncryption } from "./windows-encryption.ts";
@@ -7,11 +8,12 @@ type Runtime = { client: ChatGPTClient; signInUrl: string | null; signIn: Promis
 const state = globalThis as typeof globalThis & { recipeChatGPTRuntime?: Runtime };
 export const usingChatGPT = () => process.env.ANALYSIS_AUTH_MODE === "chatgpt";
 export function chatgptRuntime(): Runtime {
-  if (!usingChatGPT() || !process.env.RECIPE_CHATGPT_DIR || !isAbsolute(process.env.RECIPE_CHATGPT_DIR)) throw new Error("Lokaler ChatGPT-Abo-Zugang ist nicht eingerichtet.");
+  if (!usingChatGPT() || (!process.env.RECIPE_DATABASE_URL && (!process.env.RECIPE_CHATGPT_DIR || !isAbsolute(process.env.RECIPE_CHATGPT_DIR)))) throw new Error("Lokaler ChatGPT-Abo-Zugang ist nicht eingerichtet.");
   if (!state.recipeChatGPTRuntime) {
     const runtime = { signInUrl: null, signIn: null, error: null } as unknown as Runtime;
     const encryption = process.env.RECIPE_PRIVATE_SERVER === "true" ? serverEncryption(process.env.RECIPE_CREDENTIAL_KEY ?? "") : windowsEncryption;
     runtime.client = createChatGPT({ appName: "Digitales Rezeptbuch", appId: "digitales-rezeptbuch", redirectPort: 0, storageDir: process.env.RECIPE_CHATGPT_DIR, sendHostId: true, credentialEncryption: encryption,
+      ...(process.env.RECIPE_DATABASE_URL ? { profileStore: new PostgresProfiles(process.env.RECIPE_CREDENTIAL_KEY ?? "") } : {}),
       openBrowser: (url) => { if (new URL(url).origin !== "https://auth.openai.com") throw new Error("Unerwartete Anmeldeadresse."); runtime.signInUrl = url; },
     });
     state.recipeChatGPTRuntime = runtime;

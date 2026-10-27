@@ -50,7 +50,16 @@ export interface CredentialEncryption {
   decrypt(ciphertext: Uint8Array): string | Promise<string>;
 }
 
+/** Trusted server adapter. Every read/write is serialized across processes. */
+export interface ChatGPTProfileStore {
+  withLock<T>(operation: () => Promise<T>, signal?: AbortSignal): Promise<T>;
+  read(): Promise<StoredState | undefined>;
+  write(state: StoredState): Promise<void>;
+  getHostId(): Promise<string>;
+}
+
 export interface ChatGPTConfig {
+  profileStore?: ChatGPTProfileStore;
   /** The same human-readable app name on every installation. */
   appName: string;
   /** Stable filesystem identifier, separate from the issued OAuth client ID. */

@@ -1,55 +1,56 @@
-# Private Online-Version für iPhone und iPad
+# Privates Rezeptbuch auf iPhone und iPad
 
-Stand 27. Oktober 2026: **implementiert und mit künstlichen Daten geprüft, noch nicht auf Render eingerichtet/veröffentlicht**. Der Nutzer benötigt Foto-Erkennung auf iPhone/iPad ohne eingeschalteten eigenen Rechner. Die bisherige lokale Windows-Variante ist dafür kein fertiges Ergebnis. GitHub Pages bleibt statisch und führt keine KI-Aufträge aus.
+**Stand 27.10.2026:** Kostenloser Serverpfad implementiert und geprüft; Render-Start noch ausstehend. Keine behauptete Geräteabnahme. Nutzerentscheidung: ausschließlich kostenlose Tarife, kein kostenpflichtiger API-Zugang.
 
-## Vorgesehener Server
+## Betrieb
 
-Ein privater Einzelinhaber-Server auf Render, Node.js 24+, eine Instanz mit dauerhaftem Datenträger. Webserver und separater Analyseworker laufen als getrennte Prozesse derselben Instanz. Dies ist kein Mehrbenutzer-/RLS-System. Die komplette externe Oberfläche ist durch die neue Zugangssperre geschützt; intern bleibt Next.js ausschließlich auf Loopback erreichbar.
+- GitHub `stryker-max/digitales-rezeptbuch`, Branch `main`, Node 24.18.0, Frankfurt.
+- **Render Free**, 0 USD/Monat, ohne Datenträger. Build `npm ci && npm run build`, Start `npm run start:private`, Health `/_health`.
+- **Neon Free** im eigenen kostenlosen Workspace, PostgreSQL in Frankfurt. Eigene Datenbank `rezeptbuch`; separater Zweig `synthetic-storage-verification` enthält ausschließlich künstliche Prüfquellen.
+- Webserver und separater Abo-Worker auf Render; Neon hält Originale, Rezepte, persistente Aufträge und verschlüsselte Abo-Verbindung. Lokale PC-Dateien sind nicht erforderlich. Keine automatischen Upgrades, kein API-Fallback.
+- Render schläft nach 15 Minuten ohne eingehenden Verkehr. Erstes Öffnen kann etwa eine Minute dauern. Bei längerer Verarbeitung/Neustart kann ein Auftrag unterbrochen werden. Persistente Aufträge gehen dadurch nicht verloren; unklar begonnene Anbieteraufrufe werden bewusst nicht automatisch wiederholt. Keine Garantie für einen ständig aktiven Hintergrundworker im Free-Tarif.
+- Neon Free kann ebenfalls einschlafen. Der Worker vermeidet dauerhaftes Zwei-Sekunden-Polling und erhält bei Upload eine Prozessnachricht; Wartungsprüfung alle sechs Minuten. Verbindungen werden nach zehn Sekunden Leerlauf freigegeben.
+- Free-Kontingente gelten: derzeit Neon 1 GB/Projekt, 100 CU-Stunden und 5 GB ausgehender Datenverkehr/Monat; Render 750 kostenlose Instanzstunden/Workspace/Monat sowie Build-/Bandbreitenkontingente. Kein Bezahltarif eingerichtet. Bei Kontingentende kann die App ausfallen, bis das Kontingent erneuert wird. Kein kostenloser Dienst ersetzt unabhängige Sicherungen.
+- Zusätzliche App-Grenzen: 100 gespeicherte Aufträge, drei gleichzeitig, insgesamt 200 MB Originale in der Serverdatenbank, 25 MB je Datei und maximal zehn PDF-Seiten. Maximal 20 reservierte Abo-Aufrufe pro UTC-Tag (einstellbar 1–100), keine automatische Wiederholung. Fotoübertragung erfordert weiterhin eine ausdrückliche Dateifreigabe oder die freiwillige dauerhafte Übertragungsfreigabe.
 
-- Repository: `https://github.com/stryker-max/digitales-rezeptbuch`, Branch `main`, Root-Verzeichnis leer.
-- Runtime: Node.js, `NODE_VERSION=24.18.0`, Build `npm ci && npm run build`, Start `npm run start:private`.
-- Vorgesehener Compute-Tarif `0.5c-512mb` und 1 GB dauerhafter Speicher unter `/var/data`. Kleinste passende Größe; reale Lastprüfung auf Render steht noch aus. Kein automatisches Upgrade bei Speicherdruck.
-- Grundkosten laut am 27.10.2026 geöffnetem Render-Dashboard und Preistabelle: **7 USD + 0,25 USD/Monat**, vor möglichen Steuern. Hobby-Workspace ohne zusätzliche Grundgebühr. Enthaltene Bandbreite/Build-Minuten beachten; Mehrverbrauch kann zusätzliche Kosten erzeugen. Ein kostenpflichtiger Tarif ist **nicht beauftragt oder gebucht**. Die automatische Freigabeprüfung hat dessen Auswahl bis zur ausdrücklichen Nutzerfreigabe blockiert.
-- Region möglichst Frankfurt, sofern im gewählten Workspace verfügbar und keine zugehörigen Ressourcen eine andere Region erfordern. Health-Check `/_health`.
-- Kostenloses Compute hat keinen dauerhaften Datenträger und ist für diese SQLite-/Abo-Installation ungeeignet. Kein Ausweichen auf flüchtigen Speicher oder Veröffentlichung des ungeschützten lokalen Dienstes.
+## Geschützte Runtime-Einstellungen
 
-## Konfiguration nach Freigabe
-
-Geheimnisse ausschließlich als Render-Runtimewerte, nie im Repository, Browser oder Buildprotokoll speichern:
+Werte nie in Git, Browser-App oder Protokolle kopieren:
 
 | Name | Zweck |
 | --- | --- |
-| `RECIPE_PRIVATE_DATA_DIR` | `/var/data` auf dem tatsächlich angehängten dauerhaften Datenträger |
-| `RECIPE_OWNER_PASSWORD` | Persönlicher privater Zugang, 20–200 Zeichen; für den Inhaber sicher bereitstellen |
-| `RECIPE_SESSION_KEY` | Eigener zufälliger Schlüssel, mindestens 256 Bit, Base64/Base64url; signiert die privaten Sitzungen |
-| `RECIPE_CREDENTIAL_KEY` | Anderer zufälliger 256-Bit-Schlüssel, Base64/Base64url; schützt gespeicherte Abo-Zugänge mit AES-256-GCM |
-| `RECIPE_CHATGPT_BOOTSTRAP` | Einmaliges verschlüsseltes Übergabepaket des ausdrücklich ausgewählten App-Profils |
-| `RECIPE_PUBLIC_ORIGIN` | Optional feste HTTPS-Adresse ohne Pfad; sonst dokumentiertes `RENDER_EXTERNAL_URL` verwenden |
-| `ANALYSIS_DAILY_CALL_LIMIT` | Optional 1–100, Standard 20, keine automatische Wiederholung nach Fehlern |
+| `RECIPE_DATABASE_URL` | Direkte PostgreSQL-Adresse ohne `-pooler`, Rolle und Passwort; TLS-Zertifikate werden geprüft |
+| `RECIPE_OWNER_PASSWORD` | Persönlicher Zugang, 20–200 Zeichen, vom Eigentümer eingegeben |
+| `RECIPE_SESSION_KEY` | Zufälliger 256-Bit-Schlüssel für signierte Sitzungen |
+| `RECIPE_CREDENTIAL_KEY` | Anderer zufälliger 256-Bit-Schlüssel für AES-256-GCM; getrennt vom Datenbankbestand aufbewahren |
+| `RECIPE_CHATGPT_BOOTSTRAP` | Einmaliges verschlüsseltes Paket des freigegebenen App-Profils; nach erfolgreichem Import aus Render entfernen |
+| `RECIPE_PUBLIC_ORIGIN` | Optional feste HTTPS-Adresse; sonst `RENDER_EXTERNAL_URL` |
+| `ANALYSIS_DAILY_CALL_LIMIT` | Standard 20 |
 
-Der Starter setzt Abo-Modus und Datenverzeichnisse selbst; geerbte API-Schlüssel/Modellkonfiguration werden im Kindprozess geleert. Internes Zugangstoken pro Prozessstart zufällig neu. Der HTTPS-Ursprung wird strikt geprüft. Vor dem ersten Online-Aufruf müssen Tarif, Datenträger, Geheimnisse, der verschlüsselte Profilumzug und die tatsächliche Anbieterberechtigung für diesen persönlichen Server eingerichtet und geprüft sein.
+`RECIPE_PRIVATE_DATA_DIR` ist mit Neon nicht erforderlich. Ohne Datenbank ist der ältere Dateipfad weiterhin möglich, benötigt aber einen echten dauerhaften Datenträger; er wird nicht für Render Free verwendet. Der Starter erzwingt Abo-Modus, interne Loopback-Adressen und ein zufälliges internes Zugangstoken. API-Schlüssel werden aus Kindprozessen entfernt.
 
-## Abo-Umzug
+Die Postgres-Tabellen werden additiv mit nachverfolgter Migration eingerichtet. Schema und Originalspeicher wurden zuerst im getrennten Testzweig geprüft. Kein Supabase-/Mehrbenutzersystem: eine private Instanz für den Eigentümer, komplette Oberfläche durch Passwort und Ursprungskontrollen geschützt. Datenbankkennwort ausschließlich serverseitig; keine öffentliche SQL-/Originalschnittstelle.
 
-Die offizielle OpenAI-Anleitung dokumentiert den Betrieb eigener Open-Source-Anwendungen auf selbst gehosteten VMs. Die pauschale Aussage „Abo geht ausschließlich lokal“ ist daher zu eng. Das ist keine allgemeine Freigabe für beliebige kommerzielle/öffentlich angebotene Abo-Apps; tatsächlicher persönlicher Serverzugang muss geprüft werden.
+## Abo-Umzug und Schutz
 
-Für den Umzug nur die bereits ausdrücklich freigegebene Rezeptbuch-Verbindung verwenden, keine Codex-/fremden Anmeldedaten. `scripts/create-server-bootstrap.mjs` liest den neuen Serverschlüssel ausschließlich über stdin und liefert nur ein verschlüsseltes Paket. Es überträgt nur das ausgewählte Profil und verändert die ursprüngliche Windows-Datei nicht. Nicht ohne tatsächliche Freigabe und bekanntes Ziel ausführen. Schlüssel und Paket nicht gemeinsam protokollieren. Der Server importiert das Paket beim ersten Start unter eigener neuer Host-ID; vorhandene Serverdateien werden niemals überschrieben. Danach darf ausschließlich der Server diese Sitzung erneuern; den früheren lokalen Worker stoppen, damit nicht zwei Installationen denselben Refresh-Token gleichzeitig verwenden. Übergabevariable nach erfolgreichem Import entfernen, Schlüssel dauerhaft sicher aufbewahren.
+Nur die bereits freigegebene Rezeptbuch-Verbindung verwenden, keine Codex-Anmeldung. `create-server-bootstrap.mjs` liest den neuen Schlüssel über stdin und gibt nur verschlüsselten Inhalt aus. Der erste Import erzeugt eine eigene stabile Host-ID. Bestehende Serverprofile haben Vorrang; falscher Schlüssel oder beschädigter Inhalt führen zum Fehler, nicht zum Zurücksetzen. Originales Windows-DPAPI-Profil bleibt unverändert. Der alte lokale Worker wurde gestoppt: nur der neue Server darf diese Sitzung erneuern.
 
-Bei entzogener/abgelaufener Zustimmung ist erneute sichere Einrichtung nötig. Der Loopback-OAuth-Callback wird niemals fälschlich auf dem iPhone geöffnet. Keine automatische API-Abrechnung als Ersatz.
+Abo-Zugänge liegen AES-256-GCM-verschlüsselt in Neon, Schlüssel getrennt bei Render. Der Refresh-Zwischenstand wird sofort dauerhaft gespeichert, auch wenn die nachfolgende Prüfung fehlschlägt. Direkte Verbindungen und eine exklusive Session-Sperre verhindern konkurrierenden Refresh in Web und Worker. Bei widerrufener Verbindung ist erneute geschützte Einrichtung nötig; der iPhone-Browser wird nicht auf einen falschen localhost-Callback geschickt.
 
-## Schutz und Geräteabgleich
+Zugangscookie: Secure, HttpOnly, SameSite=Lax, Hostbindung, 30 Tage. Gateway prüft Anmeldung/Origin, entfernt fremde Inhaber-/Weiterleitungsheader und spricht ausschließlich mit dem internen Next-Server. Dieser prüft zusätzlich das interne Token. Analyseaufträge behalten ihre separaten Bearercodes. `/_health` enthält keine Rezept-/Kontodaten.
 
-- Eigenes Passwortformular, 30-Tage-Sitzungscookie mit `Secure`, `HttpOnly`, `SameSite=Lax`, Hostbindung und HMAC. Falsche Host-/Origin-Angaben und gefälschte Sitzungen abweisen; Anmeldeversuche begrenzen. Keine Rezepte/Originale für unangemeldete Anfragen. `/_health` gibt lediglich einen technischen Status ohne Daten zurück.
-- Das Gateway entfernt externe Weiterleitungs-/Inhaberheader, authentifiziert zuerst, prüft schreibende Ursprünge und reicht erst dann an die interne Loopback-API weiter. Auch diese prüft im Servermodus das interne Token. Unveränderte API-Bearercodes je Analyseauftrag bleiben zusätzlich erforderlich.
-- ChatGPT-Zugänge auf dem Datenträger AES-256-GCM-verschlüsselt, Schlüssel getrennt in den Runtimegeheimnissen. Falscher Schlüssel, Manipulation oder beschädigte Datei führen zum Fehler; kein Klartext- oder Leerdaten-Fallback. Bereits gespeicherte Windows-DPAPI-Zugänge bleiben unberührt.
-- Bestätigte KI-Rezepte samt Originalen liegen im dauerhaften Serverbestand. Die App lädt neue bestätigte Fassungen beim Öffnen und bei Rückkehr zum Fenster auf das jeweilige Gerät. Jeder Import prüft Archivschema, Inhalt, Originalbytes und Hash. Gleiche ID mit abweichendem Inhalt blockiert den Abgleich; kein Überschreiben. Offlinekopien bleiben im jeweiligen Browser erhalten.
-- Nur auf einem alten Gerät vorhandene oder manuell wiederhergestellte Rezepte werden nicht still zum Server hochgeladen. Weiterhin zunächst exportieren und bewusst wiederherstellen. Plan, Einkauf und persönliche Metadaten sind weiterhin gerätelokal; sie werden nicht automatisch zusammengeführt.
-- Persönliches Passwort nur mit eigenen Geräten verwenden. Diese Ausbaustufe besitzt keine getrennten Personen-/Familienkonten und keinen Fernentzug bereits geladener Offlinekopien.
+## Sammlung und Sicherung
 
-## Bisherige Prüfung und letzte Abnahme
+Neue bestätigte KI-Rezepte werden beim Öffnen und bei Rückkehr auf das jeweilige Gerät ergänzt. Archive und Original-Prüfsummen werden vor Übernahme validiert. Gleiche ID mit verändertem Inhalt blockiert den Abgleich; keine bestätigte Fassung wird überschrieben. Die Browserkopie erlaubt weiterhin Offline-Kochen. Alte lokale oder aus Datei wiederhergestellte Rezepte werden nicht still hochgeladen. Plan, Einkauf und persönliche Metadaten bleiben gerätelokal.
 
-30 Bibliothekstests bestanden, davon neue Tests für unveränderlichen Geräteabgleich, manipulierte Quellen, gefälschte/abgelaufene Host-Sitzungen und Serververschlüsselung. Zwei separate Servertests prüfen die tatsächliche HTTP-Zugangssperre und den einmaligen verschlüsselten Profilimport mit künstlichen Zugängen. Zusätzlicher vollständiger Test gegen den echten Next.js-Produktionsserver: geschützte Anmeldung, synthetischer Auftrag, serverseitige Bestätigung, privater Sammlungsabruf und bytegleiche Archiv-Rücksicherung als zweites Gerät. Dabei keine Anbieteraufrufe.
+„Sammlung sichern“ weiterhin regelmäßig auf jedem relevanten Gerät verwenden. Die JSON-Sicherung ist privat und unverschlüsselt; unabhängig aufbewahren. Wartende/fehlgeschlagene Serveraufträge und Abo-Anmeldungen gehören nicht in diesen Rezept-Export. Ein automatischer Server-Gesamtexport samt Wiederherstellung ist noch offen. Keine Fernlöschung bereits gespeicherter Offlinekopien.
 
-Web-/Pages-/Worker-Typprüfungen, Next.js-Produktionsbuild, Pages-Build und alle acht bisherigen Produktions-Browserabläufe bestanden; Pages-Browsertest ebenfalls bestanden. Die Testausgaben beider Suiten sind nun getrennt, damit parallele Läufe ihre Aufzeichnungen nicht gegenseitig löschen. Der vorherige echte Abo-Bild-/PDF-Test unter Windows ist kein Nachweis für den noch nicht eingerichteten Render-Server. Nach Nutzerfreigabe: echten Deploy prüfen, erneuter anonymer Zugriffstest, künstliches Foto/PDF über das Abo vom Server erkennen lassen, Originalvergleich, bestätigtes Rezept auf zweitem Gerätekontext, Neustart/Persistenz und schließlich echte iPhone-/iPad-Kamera-/PWA-Abnahme.
+## Prüfstand
 
-Quellen: [OpenAI: selbst gehostete VMs](https://developers.openai.com/siwc/token-sharing-open-source/self-hosted-vms), [Render: Compute-Tarife](https://render.com/docs/compute-plans), [Preise](https://render.com/pricing), [dauerhafte Datenträger](https://render.com/docs/disks), [Runtimevariablen](https://render.com/docs/environment-variables). Am 27.10.2026 geöffnet; die tatsächliche Buchungsoberfläche ist vor Ausführung erneut maßgeblich.
+30 Bibliothekstests, zwei Gateway-/Bootstrap-Tests sowie vollständige Produktions-HTTP-Prüfung mit synthetischer Anmeldung, Auftrag, Bestätigung, Gerätearchiv und bytegleichem Original bestanden. Abo-SDK: 58 bestanden, eine Windows-bedingte Prüfung übersprungen. Typprüfungen und Produktionsbuilds bestanden. Bisherige Browserprüfungen: acht Produktionsabläufe und ein Pages-Ablauf.
+
+Zusätzlich tatsächlicher Neon-Testzweig: atomare doppelte Einreichung, konkurrierende Worker-Übernahme, Auftragsberechtigung, unveränderliche Bestätigung, Archiv-Rücksicherung mit gleichem Original, verschlüsselte Profile, stabiler Host, abgewiesener falscher Schlüssel und trotz folgendem Fehler dauerhaft gespeicherter Refresh-Zwischenstand. Keine OpenAI-Aufrufe und keine echten Rezepte in diesem Test.
+
+Noch offen: Render-Veröffentlichung, tatsächlicher Abo-Aufruf vom neuen Server, Neustart-/Kaltstartprüfung im Hosting, anonyme Zugriffsprüfung der öffentlichen Adresse und echte Kamera-/PWA-/Offline-Abnahme auf iPhone/iPad. Der frühere echte lokale Bild-/PDF-Abo-Test ersetzt diese Online-Abnahme nicht. HEIC/HEIF ist noch nicht unterstützt.
+
+Quellen: [Render Free](https://render.com/docs/free), [Neon Free](https://neon.com/docs/introduction/plans), [Neon: 1 GB Free](https://neon.com/blog/neon-free-plan-1-gb-per-project), [Neon Pooling](https://neon.com/docs/connect/connection-pooling), [PostgreSQL-TLS](https://node-postgres.com/features/ssl), [OpenAI: persönliche selbst gehostete Anwendungen](https://developers.openai.com/siwc/token-sharing-open-source/self-hosted-vms). Anbieter können ihre kostenlosen Kontingente ändern.

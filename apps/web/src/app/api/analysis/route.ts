@@ -1,4 +1,5 @@
-import { configured, enqueue, localRequest, openJobs } from "@/lib/analysis-server";
+import { openJobRepository } from "@/lib/job-repository";
+import { configured, localRequest } from "@/lib/analysis-server";
 import { inspectSource } from "@/lib/source-validation";
 import { chatgptRuntime, usingChatGPT } from "@/lib/chatgpt-server";
 export const runtime = "nodejs";
@@ -38,9 +39,10 @@ export async function POST(request: Request) {
       if (typeof selected !== "string" || !models.some((item) => item.slug === selected)) return reply({ error: "Ein verfügbares ChatGPT-Modell auswählen." }, 422);
       model = selected; profileId = session.profileId;
     }
-    const db = openJobs();
-    try { enqueue(db, { id, token, source: bytes, name: file.name.replace(/[\\/\x00-\x1f]/g, "_").slice(0, 200), mime: file.type, pages, model, authKind: usingChatGPT() ? "chatgpt" : "api", profileId }); }
-    finally { db.close(); }
+    const db = await openJobRepository();
+    try { await db.enqueue({ id, token, source: bytes, name: file.name.replace(/[\\/\x00-\x1f]/g, "_").slice(0, 200), mime: file.type, pages, model, authKind: usingChatGPT() ? "chatgpt" : "api", profileId }); }
+    finally { await db.close(); }
+    if (process.connected) process.send?.({ type: "recipe-job-enqueued" }, () => {});
     return reply({ id, state: "queued" }, 202);
   } catch (error) { return reply({ error: error instanceof Error && /Datei|Bild|PDF|KI-|Auftrag|Upload|Limit|limit|Bestätigung|Rezept/.test(error.message) ? error.message : "Datei konnte nicht geprüft oder gespeichert werden. Verschlüsselte oder beschädigte PDFs werden nicht unterstützt." }, 422); }
 }

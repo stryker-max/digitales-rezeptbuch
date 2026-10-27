@@ -22,7 +22,7 @@ export function openJobs(path?: string) {
   return db;
 }
 export const tokenHash = (token: string) => createHash("sha256").update(token).digest("hex");
-export function configured() { return process.env.LOCAL_ANALYSIS_ENABLED === "true" && Boolean(process.env.RECIPE_DATA_DIR) && (process.env.ANALYSIS_AUTH_MODE === "chatgpt" ? Boolean(process.env.RECIPE_CHATGPT_DIR) : Boolean(process.env.OPENAI_API_KEY && process.env.OPENAI_MODEL)); }
+export function configured() { return process.env.LOCAL_ANALYSIS_ENABLED === "true" && Boolean(process.env.RECIPE_DATA_DIR || process.env.RECIPE_DATABASE_URL) && (process.env.ANALYSIS_AUTH_MODE === "chatgpt" ? Boolean(process.env.RECIPE_CHATGPT_DIR || process.env.RECIPE_DATABASE_URL) : Boolean(process.env.OPENAI_API_KEY && process.env.OPENAI_MODEL)); }
 export function localRequest(request: Request) {
   if (process.env.RECIPE_PRIVATE_SERVER === "true" && !privateServerRequest(request)) return false;
   const url = new URL(request.url);
@@ -74,7 +74,7 @@ export function publishResult(db: DatabaseSync, job: Job, value: unknown) {
   const result = validateAnalysis(value, job.pages);
   db.prepare("UPDATE jobs SET state='needs_review',result=? WHERE id=? AND state='processing'").run(JSON.stringify(result), job.id);
 }
-export function confirmJob(db: DatabaseSync, job: Job, draft: unknown, resolutions: unknown) {
+export function reviewedRecipe(job: Job, draft: unknown, resolutions: unknown) {
   if (job.state === "confirmed" && job.confirmed) return JSON.parse(job.confirmed);
   if (job.state !== "needs_review" || !job.result) throw new Error("Der Auftrag ist nicht zur Freigabe bereit.");
   const analysis = validateAnalysis(JSON.parse(job.result), job.pages);
@@ -100,6 +100,11 @@ export function confirmJob(db: DatabaseSync, job: Job, draft: unknown, resolutio
     sourceText: d.transcription, sourceName: job.name, sourceType: job.mime, sourceHash: job.hash, createdAt: new Date().toISOString(),
     analysis: { model: job.model, promptVersion: job.prompt_version, blocks: analysis.blocks, issues: analysis.issues, resolutions: review.resolutions, originalTranscription: analysis.blocks.map((block) => block.text).join("\n\n"), ...(analysis.recipe ? { structured: analysis.recipe } : {}) },
   };
+  return recipe;
+}
+export function confirmJob(db: DatabaseSync, job: Job, draft: unknown, resolutions: unknown) {
+  if (job.state === "confirmed" && job.confirmed) return JSON.parse(job.confirmed);
+  const recipe = reviewedRecipe(job, draft, resolutions);
   const change = db.prepare("UPDATE jobs SET state='confirmed',confirmed=? WHERE id=? AND state='needs_review'").run(JSON.stringify(recipe), job.id);
   if (change.changes !== 1) throw new Error("Auftrag wurde gleichzeitig verändert. Bitte neu laden.");
   return recipe;

@@ -51,7 +51,7 @@ function validateRecord(value: unknown): StoredConnection {
   return value as unknown as StoredConnection;
 }
 
-function validateState(value: unknown): StoredState {
+export function validateState(value: unknown): StoredState {
   const invalid = () => new ChatGPTError("storage_invalid", "Saved ChatGPT profiles could not be read. Restore the credential file before signing in.");
   if (!isObject(value) || value.version !== 2 || !Array.isArray(value.profiles) || !Array.isArray(value.pendingRegistrations)) throw invalid();
   const entries = [...value.profiles, ...value.pendingRegistrations];

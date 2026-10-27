@@ -9,7 +9,8 @@ import { ConnectionStore } from "./storage.js";
 import type { ChatGPTClient, ChatGPTConfig, LoginProfile, PendingRegistration, SessionState, StoredConnection, StoredProfile, StoredState } from "./types.js";
 
 export { ChatGPTError } from "./errors.js";
-export type { ChatGPTClient, ChatGPTConfig, ChatGPTModel, CredentialEncryption, LoginProfile, ResponseInputMessage, SessionError, SessionIdentity, SessionState, SignInOptions, StreamResponseOptions } from "./types.js";
+export { validateState as validateStoredState } from "./storage.js";
+export type { StoredState, ChatGPTProfileStore, ChatGPTClient, ChatGPTConfig, ChatGPTModel, CredentialEncryption, LoginProfile, ResponseInputMessage, SessionError, SessionIdentity, SessionState, SignInOptions, StreamResponseOptions } from "./types.js";
 export const CHATGPT_USAGE_URL = "https://chatgpt.com/settings/usage";
 
 const SHARING_SCOPE = "chatgpt.tokens.use.direct";
@@ -69,7 +70,7 @@ export function createChatGPT(config: ChatGPTConfig): ChatGPTClient {
   if (!Number.isInteger(config.redirectPort) || config.redirectPort < 0 || config.redirectPort > 65535) throw new ChatGPTError("invalid_config", "Provide a valid loopback redirect port, or 0 to select an available port.");
   if (config.storageDir && !isAbsolute(config.storageDir)) throw new ChatGPTError("invalid_config", "ChatGPT storageDir must be an absolute path.");
   if (config.sendHostId !== undefined && typeof config.sendHostId !== "boolean") throw new ChatGPTError("invalid_config", "sendHostId must be a boolean enabled only for a compatible authorization deployment.");
-  const store = new ConnectionStore(config.storageDir ?? join(homedir(), ".config", config.appId), config.credentialEncryption);
+  const store = config.profileStore ?? new ConnectionStore(config.storageDir ?? join(homedir(), ".config", config.appId), config.credentialEncryption);
   const subscribers = new Set<(state: SessionState) => void>();
   const requests = new Set<AbortController>();
   let state: SessionState = { status: "disconnected", sharing: false };
