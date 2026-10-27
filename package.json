@@ -1,0 +1,29 @@
+{
+  "name": "digitales-rezeptbuch",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @rezeptbuch/web",
+    "build": "npm run build --workspace @rezeptbuch/web && node scripts/build-offline.mjs",
+    "build:pages": "node scripts/build-pages.mjs",
+    "typecheck:pages": "tsc --noEmit -p apps/pages/tsconfig.json",
+    "test:pages": "playwright test --config playwright.pages.config.ts",
+    "start": "npm run start --workspace @rezeptbuch/web",
+    "typecheck": "npm run typecheck --workspace @rezeptbuch/web",
+    "test": "node --experimental-strip-types --test apps/web/src/lib/*.test.ts",
+    "test:e2e": "playwright test",
+    "worker": "node --env-file-if-exists=apps/web/.env.local --experimental-strip-types apps/worker/worker.ts",
+    "typecheck:worker": "tsc --noEmit --module nodenext --moduleResolution nodenext --target es2022 --allowImportingTsExtensions --skipLibCheck apps/worker/worker.ts"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "vite": "8.3.5"
+  }
+}

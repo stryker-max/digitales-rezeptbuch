@@ -1,0 +1,25 @@
+"use client";
+import { useEffect, useState } from "react";
+import { calculateNutrition, nutrientNames, parseCatalog, suggestTags, type FoodCatalog, type RecipeMetadata as Metadata } from "@/lib/metadata";
+import type { Recipe } from "@/lib/types";
+
+export function RecipeMetadata({ recipe, value, catalog, onChange, onCatalog, onError }: {
+  recipe: Recipe; value: Metadata; catalog: FoodCatalog;
+  onChange: (value: Metadata) => void; onCatalog: (catalog: FoodCatalog) => void; onError: (message: string) => void;
+}) {
+  const suggestions = suggestTags(recipe);
+  const tags = value.tags ?? suggestions.map((item) => item.tag);
+  const [tagText, setTagText] = useState(tags.join(", "));
+  const savedTags = tags.join(", ");
+  useEffect(() => { setTagText(savedTags); }, [recipe.id, savedTags]);
+  const nutrition = calculateNutrition(recipe, catalog, value.foodByIngredient);
+  const labels = { kcal: "Energie (kcal)", protein: "Eiweiß (g)", carbs: "Kohlenhydrate (g)", fat: "Fett (g)" };
+  return <><section className="muted-panel metadata"><h2>Tags</h2><p className="small">Korrigierbare Zusatzangaben. Automatische Vorschläge beruhen auf Titel und Zutaten.</p><label>Deine Tags, mit Komma getrennt<input aria-label="Tags bearbeiten" maxLength={500} value={tagText} onChange={(event) => setTagText(event.target.value)} onBlur={() => onChange({ ...value, tags: tagText.split(",").map((tag) => tag.trim().slice(0, 50)).filter(Boolean).slice(0, 20) })} /></label><details><summary>Automatische Vorschläge und Belege</summary>{suggestions.length ? suggestions.map((item) => <p className="small" key={item.tag}>{item.tag}: {item.evidence} · Regel {item.version}</p>) : <p className="small">Keine eindeutigen Vorschläge.</p>}<button className="button" onClick={() => { const next = { ...value }; delete next.tags; onChange(next); }}>Automatische Tags verwenden</button></details></section>
+    <section className="muted-panel metadata"><h2>Nährwerte · geschätzt</h2><p className="small">Aus Ausgangszutaten berechnet. Garverluste und aufgenommenes Bratfett sind nicht berücksichtigt. Stück, ml und EL werden ohne belegten Faktor nicht in Gramm umgerechnet.</p>
+      {!catalog.foods.length && <p>Es ist noch kein Lebensmittelkatalog geladen. Keine erfundenen Nährwertangaben.</p>}
+      <label className="button file-label">Lebensmittelkatalog laden<input type="file" accept="application/json,.json" onChange={async (event) => { const file = event.target.files?.[0]; event.target.value = ""; if (!file) return; try { if (file.size > 1_000_000) throw new Error("Katalog zu groß (maximal 1 MB)."); const next = parseCatalog(JSON.parse(await file.text())); const conflicts = catalog.foods.some((food) => { const incoming = next.foods.find((item) => item.id === food.id); return incoming && JSON.stringify(food) !== JSON.stringify(incoming); }); if (conflicts) throw new Error("Eine Lebensmittel-ID hat andere Werte. Für neue Datenversionen neue IDs verwenden."); onCatalog(parseCatalog({ version: 1, foods: [...catalog.foods, ...next.foods.filter((food) => !catalog.foods.some((old) => old.id === food.id))] })); } catch (error) { onError(error instanceof Error ? error.message : "Katalog konnte nicht geladen werden."); } }} /></label>
+      {catalog.foods.length > 0 && recipe.ingredients.map((item) => <label key={item.id}>{item.name} · {item.amountText}<select aria-label={`Lebensmittel für ${item.name}`} value={value.foodByIngredient?.[item.id] ?? ""} onChange={(event) => onChange({ ...value, foodByIngredient: { ...value.foodByIngredient, [item.id]: event.target.value } })}><option value="">Nicht zugeordnet</option>{catalog.foods.map((food) => <option key={food.id} value={food.id}>{food.name} · {food.state} · {food.version}</option>)}</select></label>)}
+      <dl>{nutrientNames.map((key) => { const item = nutrition.totals[key]; const complete = item.missing.length === 0 && recipe.ingredients.length > 0; return <div key={key}><dt>{labels[key]} · {complete && recipe.servings ? "pro Portion" : "gesamte Rezeptmenge"}</dt><dd>{complete ? (item.subtotal / (recipe.servings ?? 1)).toLocaleString("de-AT", { maximumFractionDigits: 1 }) : `Unvollständig · Teilsumme ${item.subtotal.toLocaleString("de-AT", { maximumFractionDigits: 1 })}`} {key === "kcal" && <span> · {(item.subtotal / (complete ? recipe.servings ?? 1 : 1) * 4.184).toLocaleString("de-AT", { maximumFractionDigits: 1 })} kJ</span>} {item.missing.length > 0 && <small>Fehlend: {item.missing.join(", ")}</small>}</dd></div>; })}</dl>
+      <details><summary>Berechnungsgrundlage und Quellen</summary>{nutrition.contributions.map((item, index) => <p className="small" key={index}>{item.ingredient}: {item.grams === null ? "Grammmenge unbekannt" : `${item.grams} g`} · {item.food ? `${item.food.name}, ${item.food.state}; ${item.food.source}; Version ${item.food.version}; ${item.food.license}` : "Lebensmittel nicht zugeordnet"}</p>)}<p className="small">Je Beitrag: Gramm ÷ 100 × Lebensmittelwert pro 100 g. Energie in kJ: kcal × 4,184. Daten und Zuordnungen werden mitgesichert.</p></details>
+    </section></>;
+}

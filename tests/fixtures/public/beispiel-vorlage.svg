@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200">
+  <rect width="900" height="1200" fill="#f6f2e9"/>
+  <rect x="66" y="70" width="768" height="1060" rx="18" fill="#fffdf8" stroke="#d6c8aa" stroke-width="3"/>
+  <g fill="#263343" font-family="Arial, sans-serif">
+    <text x="120" y="178" font-size="54" font-weight="700">Test-Apfelpfanne</text>
+    <text x="120" y="252" font-size="31">2 Portionen</text>
+    <text x="120" y="345" font-size="37">1 Stück Apfel</text>
+    <text x="120" y="405" font-size="37">10 g Butter</text>
+    <text x="120" y="540" font-size="34">Apfel in Stücke schneiden.</text>
+    <text x="120" y="616" font-size="34">Butter in Pfanne schmelzen</text>
+    <text x="120" y="676" font-size="34">und Apfel kurz braten.</text>
+  </g>
+  <text x="120" y="1070" fill="#697789" font-family="Arial, sans-serif" font-size="22">Künstliche Testvorlage · keine private Rezeptdatei</text>
+</svg>

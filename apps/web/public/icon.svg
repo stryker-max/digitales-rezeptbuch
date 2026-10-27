@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Digitales Rezeptbuch">
+  <rect width="512" height="512" rx="112" fill="#0F172A"/>
+  <rect x="58" y="58" width="396" height="396" rx="90" fill="#1C2B40" stroke="#4F80E2" stroke-width="12"/>
+  <path d="M256 155c-38-24-84-30-125-22v220c42-8 88-2 125 22 37-24 83-30 125-22V133c-41-8-87-2-125 22Z" fill="none" stroke="#8BB5FF" stroke-width="23" stroke-linejoin="round"/>
+  <path d="M256 158v213" stroke="#8BB5FF" stroke-width="23" stroke-linecap="round"/>
+</svg>
