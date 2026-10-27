@@ -1,5 +1,7 @@
 # Prüfbericht: Abo und automatische Foto-Übernahme
 
+Nachtrag: Für die danach vorbereitete private Serverversion gelten zusätzlich 30 aktuelle Bibliothekstests, zwei Gateway-/Profilimporttests und der vollständige synthetische Server-Gesamttest. Alle acht bisherigen Browserabläufe sowie der Pages-Test weiterhin bestanden. Die private Render-Version ist noch nicht eingerichtet; laufende Kosten nicht freigegeben. Aktueller Umfang und Grenzen: [ONLINE-BETRIEB.md](ONLINE-BETRIEB.md).
+
 27. Oktober 2026. Ersetzt für den aktuellen Stand die Aussagen des früheren [Prüfberichts](PRUEFBERICHT-2026-10-27.md) zur manuellen Übernahme und noch fehlenden KI-Extraktion.
 
 ## Tatsächlich bestanden

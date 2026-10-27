@@ -1,10 +1,16 @@
 # Digitales Rezeptbuch
 
-**Lokale App in Entwicklung · 27. Oktober 2026 · Weiterbau ab `1988cd5`**
+**Rezeptbuch für iPhone/iPad in Entwicklung · 27. Oktober 2026 · Weiterbau ab `1988cd5`**
 
 Next.js-/React-App für eigene Foto-/PDF-Rezepte, Originalvergleich, Kochen, Wochenplan und Einkauf. Navy-/Blau-Oberfläche mit großen Schaltflächen und festen Kochpfeilen. Lokal benutzbar und als browserlokale Webversion veröffentlicht; noch keine fertig abgenommene Cloud-Anwendung mit geräteübergreifender Sammlung.
 
-## App öffnen und Foto erkennen
+## Private iPhone-/iPad-Version mit KI
+
+Das aktuelle Ziel ist **Foto auf iPhone/iPad aufnehmen → automatisch ausgefülltes Rezept → bestätigen**, ohne laufenden eigenen Rechner. Dafür ist eine geschützte Serverversion mit Online-Worker und Abgleich bestätigter Rezepte implementiert und mit künstlichen Quellen geprüft. Sie ist **noch nicht auf Render veröffentlicht**. Zugangsschutz, verschlüsselter Abo-Umzug, dauerhafter Datenträger und konkrete Grundkosten (7,25 USD/Monat vor möglichen Steuern/Mehrverbrauch) sind vorbereitet; die laufenden Kosten benötigen ausdrückliche Freigabe. Es wurde nichts gebucht. [Online-Betrieb und aktueller Abnahmestand](docs/ONLINE-BETRIEB.md).
+
+Der Serverpfad ergänzt lokale Bestände, ersetzt sie nicht. Neue bestätigte KI-Rezepte werden auf weiteren eigenen Geräten mit geprüften Originalen ergänzt. Plan/Einkauf/Metadaten bleiben bislang gerätelokal. Noch kein Mehrbenutzersystem und keine echte iPhone-/iPad-Abnahme.
+
+## Bisher verfügbare App öffnen und Foto erkennen
 
 **Mit ChatGPT-Abo lokal: http://127.0.0.1:3125/**
 
@@ -42,7 +48,7 @@ Der empfohlene persönliche Windows-Zugang nutzt das ausdrücklich freigegebene 
 
 KI bleibt fehlbar. Feldtexte und Mengen müssen in den referenzierten Blöcken vorkommen; jeder Block wird zugeordnet oder begründet ausgeschlossen. Das beweist keine vollständige oder richtige Abschrift. Offene Lesefragen blockieren „Geprüft speichern“; der Nutzer löst die Bestätigung aus. Keine frei erfundenen Nährwerte, keine zusätzlichen KI-Aufrufe beim Kochen. Keine persönlichen Rezepte für die Entwicklung übertragen; tatsächliche Anbieterprüfung mit künstlichen Foto-/PDF-Vorlagen.
 
-Der lokale Dienst ist ausschließlich an Loopback gebunden. Kein Cloudkonto/RLS, keine automatische Gerätesynchronisierung. Nicht per Tunnel/Proxy veröffentlichen. Öffentliche GitHub Pages führen keine Abo-Aufrufe aus; ferngehostete Abo-Apps benötigen einen gesondert erlaubten Zugang. Der bereits vorhandene API-Schlüssel-Modus ist optional separat konfigurierbar, wurde hier nicht kostenpflichtig getestet und wird nie als Abo-Fallback benutzt.
+Der lokale Dienst ist ausschließlich an Loopback gebunden. Kein Cloudkonto/RLS, keine automatische Gerätesynchronisierung. Den unveränderten lokalen Dienst nicht per Tunnel/Proxy veröffentlichen. Der neue private Serverstarter setzt stattdessen eigene Inhaberauthentifizierung, Ursprungsschutz und verschlüsselte Serverprofile voraus. Öffentliche GitHub Pages führen keine Abo-Aufrufe aus; ferngehostete Abo-Apps benötigen einen gesondert erlaubten Zugang. Der bereits vorhandene API-Schlüssel-Modus ist optional separat konfigurierbar, wurde hier nicht kostenpflichtig getestet und wird nie als Abo-Fallback benutzt.
 
 ## Sichern und Gerätewechsel
 
@@ -55,9 +61,11 @@ Maximal 100 Rezepte, 25 MB je Original und 100 MB Sicherungsdatei. Lokale Analys
 ```powershell
 npm test
 npm run test:chatgpt
+npm run test:server
 npm run typecheck
 npm run typecheck:worker
 npm run build
+npm run test:server:integration
 npm run test:e2e
 npm run typecheck:pages
 npm run build:pages

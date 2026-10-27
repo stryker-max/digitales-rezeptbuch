@@ -140,6 +140,7 @@ export async function readFullArchive(file: File): Promise<{ recipes: LocalRecip
 }
 
 export function sameRecipeContent(a: LocalRecipe, b: LocalRecipe): boolean {
-  const content = (r: LocalRecipe) => JSON.stringify([r.title, r.description, r.sourceHash, r.sourceText, r.servings, r.ingredients, r.equipment, r.steps, r.tags, r.sourceName, r.sourceType, r.createdAt, r.analysis, r.sourceNotes]);
+  const canonical = (value: unknown): unknown => Array.isArray(value) ? value.map(canonical) : value && typeof value === "object" ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, entry]) => [key, canonical(entry)])) : value;
+  const content = (r: LocalRecipe) => JSON.stringify(canonical([r.title, r.description, r.sourceHash, r.sourceText, r.servings, r.ingredients, r.equipment, r.steps, r.tags, r.sourceName, r.sourceType, r.createdAt, r.analysis, r.sourceNotes]));
   return content(a) === content(b);
 }

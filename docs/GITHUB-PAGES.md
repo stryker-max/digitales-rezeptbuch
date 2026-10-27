@@ -24,10 +24,12 @@ npm run typecheck:pages
 npm run test:pages
 ```
 
-Geprüft im isolierten Chrome-Browser unter echtem Unterpfad: Beispielbild, manuelle Übernahme einer künstlichen PNG-Vorlage, Exportbytes, Offlineprüfung, Neuladen ohne Netzwerk und eigenes Rezept kochen. Keine `/api/`-Anfragen im statischen Betrieb, keine Browserfehler, bei 390 px kein horizontaler Überlauf. Echte Safari-/iPhone-/iPad-Abnahme bleibt offen.
+Geprüft im isolierten Chrome-Browser unter echtem Unterpfad: Beispielbild, Wiederherstellung eines künstlichen Archivs mit PNG-Original, Exportbytes, Offlineprüfung, Neuladen ohne Netzwerk und eigenes Rezept kochen. Keine `/api/`-Anfragen im statischen Betrieb, keine Browserfehler, bei 390 px kein horizontaler Überlauf. Echte Safari-/iPhone-/iPad-Abnahme bleibt offen.
 
 Auf dem iPhone nach erfolgreicher Veröffentlichung in Safari öffnen, über Teilen → Zum Home-Bildschirm hinzufügen. Vor Offline-Nutzung einmal online öffnen und „Offline-Paket prüfen“ verwenden. Browserdaten regelmäßig über „Sammlung sichern“ unabhängig aufbewahren. Lokale Rezepte vom Rechner zunächst exportieren und auf der Webadresse importieren; sie wechseln nicht automatisch auf den neuen Ursprung.
 
 Quellen: [GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site), [Vite: GitHub Pages](https://vite.dev/guide/static-deploy.html#github-pages), am 27. Oktober 2026 geöffnet. Veröffentlichungserfolg anhand tatsächlicher GitHub-Deploymentdaten und erreichbarer Website geprüft.
 
 Auf Nutzerwunsch wurde der manuelle Übertragungsweg entfernt. Automatische Foto-/PDF-Erkennung über das ChatGPT-Abo steht in der lokalen Windows-App bereit; sie ist kein Bestandteil des statischen Pages-Servers. Bestehende Rezepte und v1/v2-Sicherungen bleiben nutzbar. [Abo-Anleitung](CHATGPT-ABO.md).
+
+Der geplante private Online-Server für iPhone/iPad ist ein eigener Veröffentlichungsweg. Er ist noch nicht live und wird nicht durch einen Push zu GitHub Pages aktiviert. [Vorbereitung und Kostenfreigabe](ONLINE-BETRIEB.md).

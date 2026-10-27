@@ -4,6 +4,7 @@ import { isAbsolute, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { validateAnalysis, validateReview, promptVersion } from "./analysis-contract.ts";
 import { parseQuantity } from "./plan.ts";
+import { privateServerRequest } from "./private-host.ts";
 
 export type Job = { id: string; token_hash: string; source: Uint8Array; name: string; mime: string; hash: string; pages: number; state: string; result: string | null; error: string | null; model: string; created: string; started: string | null; confirmed: string | null; auth_kind: "api" | "chatgpt"; profile_id: string | null; prompt_version: string };
 export function openJobs(path?: string) {
@@ -23,6 +24,7 @@ export function openJobs(path?: string) {
 export const tokenHash = (token: string) => createHash("sha256").update(token).digest("hex");
 export function configured() { return process.env.LOCAL_ANALYSIS_ENABLED === "true" && Boolean(process.env.RECIPE_DATA_DIR) && (process.env.ANALYSIS_AUTH_MODE === "chatgpt" ? Boolean(process.env.RECIPE_CHATGPT_DIR) : Boolean(process.env.OPENAI_API_KEY && process.env.OPENAI_MODEL)); }
 export function localRequest(request: Request) {
+  if (process.env.RECIPE_PRIVATE_SERVER === "true" && !privateServerRequest(request)) return false;
   const url = new URL(request.url);
   const host = request.headers.get("host");
   const forwarded = request.headers.get("x-forwarded-host");

@@ -18,6 +18,7 @@ import { AnalysisImport, analysisJobKey, type AnalysisAccess } from "./AnalysisI
 import { draftFromAnalysis, type ReviewedDraft, type AnalysisDraft } from "@/lib/analysis-contract";
 import { RecipeImportReview } from "./RecipeImportReview";
 import { staticHosting } from "@/lib/deployment";
+import { loadConfirmedCloudRecipes } from "@/lib/cloud-sync";
 import type { Ingredient, PlanSlot, Recipe } from "@/lib/types";
 
 type View = "library" | "detail" | "cook" | "plan" | "shopping" | "import" | "recognized" | "review";
@@ -62,6 +63,7 @@ function Action({ children, onClick, primary = false, disabled = false, classNam
 export function RecipeBook() {
   const [state, setState] = useState<AppState>(initialState);
   const [notice, setNotice] = useState("");
+  const [cloudMode, setCloudMode] = useState(false);
   const [selectedFile, setSelectedFile] = useState<{ name: string; type: string; url: string; blob: File } | null>(null);
   const [fileError, setFileError] = useState("");
   const [userRecipes, setUserRecipes] = useState<LocalRecipe[]>([]);
@@ -78,7 +80,32 @@ export function RecipeBook() {
 
   useEffect(() => { window.scrollTo(0, 0); }, [state.view]);
   useEffect(() => () => { if (selectedFile) URL.revokeObjectURL(selectedFile.url); }, [selectedFile]);
-  useEffect(() => { listLocalRecipes().then((items) => { setUserRecipes(items); setRecipesReady(true); }).catch(() => setNotice("Der lokale Rezept-Speicher ist nicht verfügbar.")); }, []);
+  useEffect(() => {
+    let stopped = false, running = false, remote = false, checked = false;
+    async function refresh() {
+      if (running || stopped) return; running = true;
+      try {
+        const items = await listLocalRecipes();
+        if (stopped) return;
+        setUserRecipes(items); setRecipesReady(true);
+        if (!staticHosting && !checked) {
+          try { const config = await fetch("/api/analysis", { cache: "no-store" }).then(r => r.json()); remote = config.syncEnabled === true; checked = true; if (!stopped) setCloudMode(remote); } catch { /* Offline local collection remains available. */ }
+        }
+        if (remote) {
+          const fresh = await loadConfirmedCloudRecipes(items);
+          if (fresh.length && !stopped) {
+            await saveLocalRecipes(fresh);
+            const all = await listLocalRecipes();
+            if (!stopped) { setUserRecipes(all); setNotice(`${fresh.length} bestätigte Rezepte aus deiner privaten Sammlung geladen.`); }
+          }
+        }
+      } catch (error) { if (!stopped) setNotice(error instanceof Error ? error.message : "Der Rezept-Speicher ist nicht verfügbar."); }
+      finally { running = false; }
+    }
+    const visible = () => { if (document.visibilityState === "visible") void refresh(); };
+    void refresh(); window.addEventListener("focus", visible); document.addEventListener("visibilitychange", visible);
+    return () => { stopped = true; window.removeEventListener("focus", visible); document.removeEventListener("visibilitychange", visible); };
+  }, []);
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(preferencesKey);
@@ -164,7 +191,7 @@ export function RecipeBook() {
       if (!existing) await saveLocalRecipe(localRecipe);
       setUserRecipes((current) => [localRecipe, ...current.filter((item) => item.id !== localRecipe.id)]);
       patch({ view: "detail", recipeId: localRecipe.id });
-      setNotice("Auf diesem Gerät gespeichert. Mit „Sammlung sichern“ kannst du eine unabhängige Sicherung erstellen.");
+      setNotice(cloudMode ? "In deiner privaten Sammlung und auf diesem Gerät gespeichert. Bitte regelmäßig zusätzlich sichern." : "Auf diesem Gerät gespeichert. Mit „Sammlung sichern“ kannst du eine unabhängige Sicherung erstellen.");
       setDraft(blankDraft); setSelectedFile(null);
       setAnalysisAccess(null); setAnalysisDraft(null); setResolutions({});
       localStorage.removeItem(analysisJobKey);
@@ -275,7 +302,7 @@ export function RecipeBook() {
 
   function recognizedView() {
     if (!selectedFile || !analysisDraft) return importView();
-    return <RecipeImportReview file={selectedFile} analysis={analysisDraft} draft={draft} onChange={setDraft} resolutions={resolutions} onResolve={setResolutions} onSave={() => void saveRecognized()} onBack={() => patch({ view: "import" })} saving={saving} error={fileError} />;
+    return <RecipeImportReview remote={cloudMode} file={selectedFile} analysis={analysisDraft} draft={draft} onChange={setDraft} resolutions={resolutions} onResolve={setResolutions} onSave={() => void saveRecognized()} onBack={() => patch({ view: "import" })} saving={saving} error={fileError} />;
   }
 
   function review() {
@@ -284,5 +311,5 @@ export function RecipeBook() {
   }
 
   const activeNav = ["detail", "cook", "import", "recognized", "review"].includes(state.view) ? "library" : state.view;
-  return <div className="recipe-app"><div className="app"><header className="topbar"><div className="brand"><span className="brand-mark"><BookOpen size={23} /></span><div className="brand-name"><span>Digitales</span><br />Rezeptbuch</div></div><nav className="topnav" aria-label="Hauptnavigation"><button type="button" aria-current={activeNav === "library" ? "page" : undefined} onClick={() => navigate("library")}><BookOpen size={17} />Rezepte</button><button type="button" aria-current={activeNav === "plan" ? "page" : undefined} onClick={() => navigate("plan")}><CalendarDays size={17} />Wochenplan</button><button type="button" aria-current={activeNav === "shopping" ? "page" : undefined} onClick={() => navigate("shopping")}><ShoppingBasket size={17} />Einkauf<span className="nav-count">{state.adopted ? openShopping.length : 0}</span></button></nav><span className="topnote">{userRecipes.length ? "Lokale Sammlung" : "Beispiel-App"}</span></header><OfflineStatus cooking={state.view === "cook"} /><main>{state.view === "library" ? library() : state.view === "detail" ? detail() : state.view === "cook" ? cook() : state.view === "plan" ? plan() : state.view === "shopping" ? shoppingView() : state.view === "import" ? importView() : state.view === "recognized" ? recognizedView() : review()}</main><footer className="demo-footer"><span>Eigene Rezepte nur auf diesem Gerät · Beispielrezepte klar markiert</span><span>Lokale Daten regelmäßig sichern · keine Cloud-Synchronisierung</span></footer></div></div>;
+  return <div className="recipe-app"><div className="app"><header className="topbar"><div className="brand"><span className="brand-mark"><BookOpen size={23} /></span><div className="brand-name"><span>Digitales</span><br />Rezeptbuch</div></div><nav className="topnav" aria-label="Hauptnavigation"><button type="button" aria-current={activeNav === "library" ? "page" : undefined} onClick={() => navigate("library")}><BookOpen size={17} />Rezepte</button><button type="button" aria-current={activeNav === "plan" ? "page" : undefined} onClick={() => navigate("plan")}><CalendarDays size={17} />Wochenplan</button><button type="button" aria-current={activeNav === "shopping" ? "page" : undefined} onClick={() => navigate("shopping")}><ShoppingBasket size={17} />Einkauf<span className="nav-count">{state.adopted ? openShopping.length : 0}</span></button></nav><span className="topnote">{userRecipes.length ? "Lokale Sammlung" : "Beispiel-App"}</span></header><OfflineStatus cooking={state.view === "cook"} /><main>{state.view === "library" ? library() : state.view === "detail" ? detail() : state.view === "cook" ? cook() : state.view === "plan" ? plan() : state.view === "shopping" ? shoppingView() : state.view === "import" ? importView() : state.view === "recognized" ? recognizedView() : review()}</main><footer className="demo-footer"><span>{cloudMode ? "Private Sammlung · bestätigte KI-Rezepte auf deinen Geräten" : "Eigene Rezepte nur auf diesem Gerät · Beispielrezepte klar markiert"}</span><span>{cloudMode ? "Originale und Rezepte regelmäßig zusätzlich sichern" : "Lokale Daten regelmäßig sichern · keine Cloud-Synchronisierung"}</span></footer></div></div>;
 }

@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 const reply = (data: unknown, status = 200) => Response.json(data, { status, headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
 export async function GET(request: Request) {
   if (!localRequest(request)) return reply({ error: "Nur im lokalen Betrieb verfügbar." }, 403);
-  return reply({ enabled: configured(), ...(usingChatGPT() ? { authMode: "chatgpt" } : {}) });
+  return reply({ enabled: configured(), ...(usingChatGPT() ? { authMode: "chatgpt" } : {}), ...(process.env.RECIPE_PRIVATE_SERVER === "true" ? { syncEnabled: true } : {}) });
 }
 export async function POST(request: Request) {
   if (!localRequest(request)) return reply({ error: "Lokaler Ursprung erforderlich." }, 403);
