@@ -110,6 +110,30 @@ test("unconfigured analysis never produces a demo result and foreign-origin writ
   expect(response.status()).toBe(403);
 });
 
+test("automatic transmission choice persists, can be revoked and new files supersede finished jobs", async ({ page, request }) => {
+  const base = "http://127.0.0.1:3119";
+  await page.goto(base);
+  await page.getByRole("button", { name: "Rezept hinzufügen", exact: true }).click();
+  const automatic = page.getByRole("checkbox", { name: /^Automatisch erkennen:/ });
+  await automatic.check(); await page.reload();
+  await page.getByRole("button", { name: "Rezept hinzufügen", exact: true }).click();
+  await expect(automatic).toBeChecked(); await automatic.uncheck();
+  const png = await sharp({ create: { width: 100, height: 100, channels: 3, background: "white" } }).png().toBuffer();
+  await page.locator('input[type=file][accept="image/*,application/pdf"]').setInputFiles({ name: "synthetisch-erster-versuch.png", mimeType: "image/png", buffer: png });
+  await expect(page.getByRole("button", { name: "Foto automatisch erkennen", exact: true })).toBeDisabled();
+  const uploaded = page.waitForResponse((response) => response.request().method() === "POST" && response.url() === `${base}/api/analysis`);
+  await automatic.check(); const id = (await (await uploaded).json()).id;
+  // No worker/provider call. Mark this synthetic upload terminal to exercise retry UX.
+  const db = openJobs(resolve(process.env.RECIPE_E2E_DIR!, "analysis.sqlite"));
+  try { db.prepare("UPDATE jobs SET state='failed',error='Künstlicher Testfehler' WHERE id=?").run(id); } finally { db.close(); }
+  await expect(page.getByText("Erkennung fehlgeschlagen", { exact: true })).toBeVisible();
+  const secondUpload = page.waitForResponse((response) => response.request().method() === "POST" && response.url() === `${base}/api/analysis`);
+  await page.locator('input[type=file][accept="image/*,application/pdf"]').setInputFiles({ name: "synthetisch-neue-aufnahme.png", mimeType: "image/png", buffer: png });
+  const second = await (await secondUpload).json(); expect(second.id).not.toBe(id);
+  const access = await page.evaluate(() => JSON.parse(localStorage.getItem("digitales-rezeptbuch-analysis-job-v1")!));
+  await request.post(`${base}/api/analysis/${access.id}`, { headers: { Origin: base, Authorization: `Bearer ${access.token}` }, data: { action: "cancel" } });
+});
+
 test("synthetic persistent analysis job requires user resolution and server confirmation", async ({ page, request }) => {
   // Only an injected synthetic extraction. No worker/provider is started in this test.
   const base = "http://127.0.0.1:3119";

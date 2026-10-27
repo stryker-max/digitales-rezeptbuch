@@ -25,6 +25,7 @@ export function AnalysisImport({ file, onReview }: { file: File | null; onReview
   const [preferencesReady, setPreferencesReady] = useState(false);
   const submitted = useRef<File | null>(null);
   const opening = useRef(false);
+  const uploading = useRef(false);
   useEffect(() => {
     if (staticHosting) return;
     fetch("/api/analysis", { cache: "no-store" }).then((r) => r.json()).then((data) => { setEnabled(data.enabled === true); setAuthMode(data.authMode ?? "api"); }).catch(() => {});
@@ -53,7 +54,8 @@ export function AnalysisImport({ file, onReview }: { file: File | null; onReview
     return () => { stopped = true; clearTimeout(timer); };
   }, [access, enabled]);
   async function start() {
-    if (!file || (!automatic && (!consent || !oneRecipe)) || busy || active || !ready) return;
+    if (!file || (!automatic && (!consent || !oneRecipe)) || busy || uploading.current || active || !ready) return;
+    uploading.current = true;
     submitted.current = file;
     setBusy(true); setError("");
     try {
@@ -67,10 +69,10 @@ export function AnalysisImport({ file, onReview }: { file: File | null; onReview
       if (!response.ok) throw new Error(data.error ?? "Upload fehlgeschlagen.");
       setAccess(next); setJob({ state: "queued", name: file.name, mime: file.type, result: null, model: "" });
     } catch (error) { setError(error instanceof Error ? error.message : "Auftrag konnte nicht gestartet werden."); }
-    finally { setBusy(false); }
+    finally { uploading.current = false; setBusy(false); }
   }
   async function review() {
-    if (!access || !job?.result || opening.current) return;
+    if (!access || !job?.result || opening.current || uploading.current) return;
     opening.current = true;
     setBusy(true);
     try {
@@ -94,16 +96,17 @@ export function AnalysisImport({ file, onReview }: { file: File | null; onReview
   const active = Boolean(job && ["queued", "processing"].includes(job.state));
   const ready = enabled && (authMode !== "chatgpt" || (subscription.sharing && Boolean(subscription.model)));
   useEffect(() => {
-    if (preferencesReady && automatic && file && submitted.current !== file && ready && !active && !busy && !access) void start();
+    const previousFinished = job && ["needs_review", "confirmed", "failed", "cancelled"].includes(job.state);
+    if (preferencesReady && automatic && file && submitted.current !== file && ready && !active && !busy && (!access || previousFinished)) void start();
     // Each selected file is submitted at most once automatically. A failed call is
     // never silently retried. Permission comes from the separate opt-in below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [preferencesReady, automatic, file, ready, active, busy, access]);
+  }, [preferencesReady, automatic, file, ready, active, busy, access, job]);
   useEffect(() => {
-    if (!access || busy || job?.state !== "needs_review" || !job.result?.recipe) return;
+    if (!access || busy || (file && submitted.current !== file) || job?.state !== "needs_review" || !job.result?.recipe) return;
     try { if (sessionStorage.getItem("recipe-import-opened") !== access.id) void review(); } catch { /* Explicit open remains available. */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [access, job, busy]);
+  }, [access, job, busy, file]);
   function newImport() {
     localStorage.removeItem(key); setAccess(null); setJob(null); setError("");
     // Reusing this photo requires an explicit click, not an automatic second call.
