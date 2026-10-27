@@ -1,18 +1,22 @@
-# Lokaler Betrieb und optionale KI-Abschrift
+# Lokaler Betrieb und automatische Foto-Erkennung
 
 Ohne externe Dienste: `npm ci`, `npm run build`, `npm start`. Offline nur im Produktionsbetrieb. Für Entwicklung `npm run dev`; zuvor registrierten Produktions-Service-Worker vor Entwicklung am selben Ursprung abmelden, aber keine persönlichen Browserdaten löschen.
 
-## KI einrichten
+## Empfohlen: persönliches ChatGPT-Abo
 
-1. Eigenen API-Zugang, geeignetes Bildmodell mit Responses/Structured Outputs und Anbieterbudget bereitstellen. Kein API-Zugang wird aus einem Chat-Abonnement abgeleitet.
+Auf ausdrücklichen Nutzerwunsch: `npm ci`, `npm run build`, `npm run abo:start`, dann http://127.0.0.1:3125/. Kein API-Schlüssel nötig. Eigene offizielle Anmeldung und Abo-Freigabe; separate freiwillige Übertragungsfreigabe, danach Foto auswählen und fertiges Rezept bestätigen. [Anleitung und Grenzen](CHATGPT-ABO.md).
+
+## Alternativer expliziter API-Modus
+
+1. Eigenen API-Zugang, geeignetes Bildmodell mit Responses/Structured Outputs und Anbieterbudget bereitstellen. Dieser alternative Modus rechnet über einen ausdrücklich eingerichteten API-Schlüssel ab; er ist kein Abo-Fallback.
 2. `apps/web/.env.example` nach `apps/web/.env.local` kopieren. `LOCAL_ANALYSIS_ENABLED=true`, `OPENAI_API_KEY`, `OPENAI_MODEL` und absoluten `RECIPE_DATA_DIR` setzen. Ordner privat halten; Beispielposition `private/analysis` ist in Git ausgeschlossen. Keine Browser-/NEXT_PUBLIC-Schlüssel.
 3. Webserver neu starten und im zweiten Terminal `npm run worker`. Einzeldurchlauf: `npm run worker -- --once`. Beide lesen dieselbe Konfiguration. Ohne tatsächlich laufenden Worker wartet der gespeicherte Auftrag.
 4. Eine Datei mit genau einem vollständigen Rezept wählen; Übertragung an OpenAI und Seitenzugehörigkeit ausdrücklich bestätigen. JPEG/PNG/WebP bis 20 Millionen Pixel, keine Animation; PDF unverschlüsselt mit 1–10 Seiten; bis 25 MB. HEIC vorerst außerhalb der App als JPEG exportieren.
 5. Gesicherter Upload überlebt Browserschließen. Letzter Auftrag erscheint auf demselben Ursprung/Profil wieder; geheimer Zugriffscode bleibt im privaten Browserbestand, serverseitig nur sein Hash.
-6. Alle Quellblöcke mit Original vergleichen, Lesefragen schriftlich klären und Zutaten/Schritte/erwähnte Utensilien selbst vollständig strukturieren. Fehlendes offen lassen; unleserliches nicht als angeblich fehlend behandeln. Erst danach bestätigen.
+6. Den automatisch ausgefüllten Rezeptentwurf mit dem Original vergleichen; nur Lesefragen klären oder bei Bedarf Korrekturen öffnen. Fehlendes offen lassen; unleserliches nicht als angeblich fehlend behandeln. Erst danach bestätigen.
 7. Server prüft Pflichtfelder, Lesefragen und Zustand. Unveränderliche bestätigte Fassung wird mit hashgeprüftem Original lokal eingefügt. Bei fehlgeschlagenem Browserspeichern die Prüfung erneut öffnen; bestätigte Fassung wird idempotent geliefert. Danach Sammlung sichern.
 
-KI liefert aktuell Abschrift und Lesefragen, noch keine automatische strukturierte Extraktion. Keine Qualitätsbehauptung ohne echte Quellenprüfung. Bilder gehen als getrennte Kopien ohne EXIF an den Anbieter; PDFs vollständig. `store:false` ist keine Zusage generell ausgeschlossener Anbieteraufbewahrung. Keine Rezeptinhalte in gewöhnlichen Logs.
+KI liefert Abschrift, Lesefragen und automatische Rezeptgliederung mit Feldherkunft. Manuelles Abschreiben wurde aus der Oberfläche entfernt. Keine Qualitätsbehauptung ohne echte Quellenprüfung. Bilder gehen als getrennte Kopien ohne EXIF an den Anbieter; PDFs vollständig. `store:false` ist keine Zusage generell ausgeschlossener Anbieteraufbewahrung. Keine Rezeptinhalte in gewöhnlichen Logs.
 
 ## Abbruch, Limits und Sicherung
 

@@ -1,24 +1,38 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { validateAnalysis, type AnalysisDraft } from "@/lib/analysis-contract";
 import { staticHosting } from "@/lib/deployment";
+import { ChatGPTConnection } from "./ChatGPTConnection";
 
 export type AnalysisAccess = { id: string; token: string };
-const key = "digitales-rezeptbuch-analysis-job-v1";
+export const analysisJobKey = "digitales-rezeptbuch-analysis-job-v1";
+const key = analysisJobKey;
+const autoConsentKey = "digitales-rezeptbuch-auto-openai-consent-v1";
 type JobView = { state: string; name: string; mime: string; result: AnalysisDraft | null; error?: string; model: string };
 export function AnalysisImport({ file, onReview }: { file: File | null; onReview: (access: AnalysisAccess, file: File, analysis: AnalysisDraft) => void }) {
   const [enabled, setEnabled] = useState(false);
+  const [authMode, setAuthMode] = useState("api");
+  const [subscription, setSubscription] = useState({ sharing: false, model: "" });
+  const updateSubscription = useCallback((sharing: boolean, model: string) => setSubscription({ sharing, model }), []);
   const [consent, setConsent] = useState(false);
   const [oneRecipe, setOneRecipe] = useState(false);
   const [access, setAccess] = useState<AnalysisAccess | null>(null);
   const [job, setJob] = useState<JobView | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // File selection or Abo authentication alone never grants transmission consent.
+  const [automatic, setAutomatic] = useState(false);
+  const [preferencesReady, setPreferencesReady] = useState(false);
+  const submitted = useRef<File | null>(null);
+  const opening = useRef(false);
   useEffect(() => {
     if (staticHosting) return;
-    fetch("/api/analysis", { cache: "no-store" }).then((r) => r.json()).then((data) => setEnabled(data.enabled === true)).catch(() => {});
+    fetch("/api/analysis", { cache: "no-store" }).then((r) => r.json()).then((data) => { setEnabled(data.enabled === true); setAuthMode(data.authMode ?? "api"); }).catch(() => {});
     try { const saved = JSON.parse(localStorage.getItem(key) ?? "null"); if (saved && /^[0-9a-f-]{36}$/i.test(saved.id) && /^[0-9a-f-]{36}$/i.test(saved.token)) setAccess(saved); } catch { /* No job to resume. */ }
+    try { setAutomatic(localStorage.getItem(autoConsentKey) === "explicitly-enabled-v1"); } catch { /* Stay off if storage is unavailable. */ }
+    setPreferencesReady(true);
   }, []);
+  useEffect(() => { setConsent(false); setOneRecipe(false); }, [file]);
   useEffect(() => {
     if (!access || !enabled) return;
     let stopped = false;
@@ -39,13 +53,15 @@ export function AnalysisImport({ file, onReview }: { file: File | null; onReview
     return () => { stopped = true; clearTimeout(timer); };
   }, [access, enabled]);
   async function start() {
-    if (!file || !consent || !oneRecipe || busy) return;
+    if (!file || (!automatic && (!consent || !oneRecipe)) || busy || active || !ready) return;
+    submitted.current = file;
     setBusy(true); setError("");
     try {
-      const next = access && !job ? access : { id: crypto.randomUUID(), token: crypto.randomUUID() };
+      const next = { id: crypto.randomUUID(), token: crypto.randomUUID() };
       localStorage.setItem(key, JSON.stringify(next));
       const form = new FormData();
       form.set("id", next.id); form.set("token", next.token); form.set("file", file); form.set("consent", "true"); form.set("oneRecipe", "true");
+      if (authMode === "chatgpt") form.set("model", subscription.model);
       const response = await fetch("/api/analysis", { method: "POST", body: form });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Upload fehlgeschlagen.");
@@ -54,15 +70,18 @@ export function AnalysisImport({ file, onReview }: { file: File | null; onReview
     finally { setBusy(false); }
   }
   async function review() {
-    if (!access || !job?.result) return;
+    if (!access || !job?.result || opening.current) return;
+    opening.current = true;
     setBusy(true);
     try {
       const result = validateAnalysis(job.result, 10);
       const response = await fetch(`/api/analysis/${access.id}?source=1`, { headers: { Authorization: `Bearer ${access.token}` }, cache: "no-store" });
       if (!response.ok) throw new Error("Gesichertes Original nicht verfügbar.");
-      onReview(access, new File([await response.blob()], job.name, { type: job.mime }), result);
+      const source = new File([await response.blob()], job.name, { type: job.mime });
+      sessionStorage.setItem("recipe-import-opened", access.id);
+      onReview(access, source, result);
     } catch (error) { setError(error instanceof Error ? error.message : "Prüfung konnte nicht geöffnet werden."); }
-    finally { setBusy(false); }
+    finally { opening.current = false; setBusy(false); }
   }
   async function cancel() {
     if (!access) return;
@@ -72,11 +91,30 @@ export function AnalysisImport({ file, onReview }: { file: File | null; onReview
       setJob((current) => current ? { ...current, state: "cancelled" } : null);
     } catch (error) { setError(error instanceof Error ? error.message : "Abbruch fehlgeschlagen."); }
   }
-  const active = job && ["queued", "processing"].includes(job.state);
-  if (staticHosting) return <section className="muted-panel"><h2>Rezept selbst übertragen</h2><p className="small">Diese Webversion speichert Rezepte auf deinem Gerät. Foto/PDF auswählen und die Vorlage selbst übertragen. KI-Erkennung benötigt einen eigenen Analyseserver und ist hier noch nicht verfügbar.</p></section>;
-  return <section className="muted-panel metadata"><h2>KI-Abschrift · optional</h2><p className="small">{enabled ? "Die ausgewählte Vorlage wird an OpenAI übertragen. Die Abschrift bleibt ungeprüft. Du vergleichst alle Quellblöcke und überträgst Zutaten und Schritte in die Prüfmaske. Modellaufrufe können Kosten verursachen." : "Nicht aktiviert. Für echte Erkennung müssen Server und separater Worker mit API-Schlüssel, Modell und privatem Speicher eingerichtet sein. Manuelle Übernahme funktioniert weiterhin."}</p>
-    {enabled && <><label className="confirm-row"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /> Ich möchte die ausgewählte Datei zur Erkennung an OpenAI übertragen lassen.</label><label className="confirm-row"><input type="checkbox" checked={oneRecipe} onChange={(event) => setOneRecipe(event.target.checked)} /> Die Datei enthält genau ein Rezept, mit allen zugehörigen Seiten in richtiger Reihenfolge.</label><button className="button" disabled={!file || !consent || !oneRecipe || Boolean(active) || busy} onClick={() => void start()}>{busy ? "Wird verarbeitet …" : "KI-Abschrift starten"}</button></>}
-    {job && <div role="status"><p>{({ queued: "Gespeichert · wartet auf Worker", processing: "Handschrift und Drucktext werden gelesen", needs_review: "Abschrift bereit zum Prüfen", failed: "Analyse fehlgeschlagen", cancelled: "Analyse abgebrochen", confirmed: "Vom Nutzer bestätigt · Prüfung erneut öffnen, falls lokal noch nicht gespeichert" } as Record<string, string>)[job.state] ?? job.state}</p>{job.error && <p>{job.error}</p>}{job.result && job.result.status !== "recipe" && <p>{({ not_recipe: "Kein Rezept erkannt.", unreadable: "Vorlage nicht ausreichend lesbar. Neuaufnahme oder manuelle Übernahme erforderlich.", needs_source_selection: "Rezeptgrenzen unklar. Bitte eine Datei mit genau einem Rezept auswählen." } as Record<string, string>)[job.result.status]}</p>}{job.result?.status === "recipe" && ["needs_review", "confirmed"].includes(job.state) && <button className="button primary" disabled={busy} onClick={() => void review()}>Abschrift und Original prüfen</button>}{active && <button className="button" onClick={() => void cancel()}>Auftrag abbrechen</button>}<p className="small">Nach gespeichertem Upload läuft der Auftrag im Worker weiter. Ein Abbruch verhindert die Freigabe; laufende Anbieteraufrufe können trotzdem berechnet werden.</p></div>}
+  const active = Boolean(job && ["queued", "processing"].includes(job.state));
+  const ready = enabled && (authMode !== "chatgpt" || (subscription.sharing && Boolean(subscription.model)));
+  useEffect(() => {
+    if (preferencesReady && automatic && file && submitted.current !== file && ready && !active && !busy && !access) void start();
+    // Each selected file is submitted at most once automatically. A failed call is
+    // never silently retried. Permission comes from the separate opt-in below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preferencesReady, automatic, file, ready, active, busy, access]);
+  useEffect(() => {
+    if (!access || busy || job?.state !== "needs_review" || !job.result?.recipe) return;
+    try { if (sessionStorage.getItem("recipe-import-opened") !== access.id) void review(); } catch { /* Explicit open remains available. */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [access, job, busy]);
+  function newImport() {
+    localStorage.removeItem(key); setAccess(null); setJob(null); setError("");
+    // Reusing this photo requires an explicit click, not an automatic second call.
+    submitted.current = file;
+  }
+  if (staticHosting) return <section className="muted-panel"><h2>Foto automatisch erkennen</h2><p>Die Foto-Erkennung mit deinem ChatGPT-Abo läuft in der lokalen App auf deinem Rechner. Öffne dort das Rezeptbuch. Auf GitHub Pages kannst du deine gesicherte Sammlung wiederherstellen und offline kochen.</p><p className="small">Hier ist kein Analyseserver verbunden. Ausgewählte Fotos werden hier nicht übertragen.</p></section>;
+  return <>{authMode === "chatgpt" && <ChatGPTConnection onChange={updateSubscription} />}<section className="muted-panel metadata"><h2>Foto rein. Rezept fertig.</h2><p>{enabled ? "Titel, Zutaten und Schritte werden automatisch übernommen. Das Original bleibt unverändert. Danach siehst du das fertige Rezept zum Vergleich und Speichern." : "Die automatische Erkennung ist hier nicht gestartet. Öffne die lokale App mit deinem ChatGPT-Abo."}</p>
+    {enabled && <><label className="confirm-row"><input type="checkbox" checked={automatic} onChange={(event) => { const checked = event.target.checked; setAutomatic(checked); try { if (checked) localStorage.setItem(autoConsentKey, "explicitly-enabled-v1"); else localStorage.removeItem(autoConsentKey); } catch { /* Choice applies only in this window. */ } }} /><span>Automatisch erkennen: Von mir ausgewählte Rezeptfotos/PDFs an OpenAI senden. Ich wähle jeweils genau ein vollständiges Rezept aus.</span></label><p className="small">Freiwillig und jederzeit hier ausschaltbar. Gilt nur für hier ausgewählte Dateien, nicht für deine gespeicherte Sammlung. Die Erkennung nutzt deinen gewählten Zugang. Einen laufenden Auftrag bei Bedarf unten abbrechen.</p>
+      {!automatic && <><label className="confirm-row"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /> Diese ausgewählte Datei zur Erkennung an OpenAI senden.</label><label className="confirm-row"><input type="checkbox" checked={oneRecipe} onChange={(event) => setOneRecipe(event.target.checked)} /> Die Datei enthält genau ein vollständiges Rezept, alle Seiten in richtiger Reihenfolge.</label></>}
+      <button className="button primary" disabled={!file || !ready || (!automatic && (!consent || !oneRecipe)) || active || busy} onClick={() => void start()}>{busy ? "Wird verarbeitet …" : "Foto automatisch erkennen"}</button></>}
+    {job && <div role="status"><p>{({ queued: "Foto gesichert · Erkennung startet gleich", processing: "Dein Rezept wird gelesen und gegliedert …", needs_review: "Dein Rezept ist bereit", failed: "Erkennung fehlgeschlagen", cancelled: "Erkennung abgebrochen", confirmed: "Bereits bestätigt · bei Bedarf erneut auf diesem Gerät speichern" } as Record<string, string>)[job.state] ?? job.state}</p>{job.error && <p>{job.error}</p>}{job.result && job.result.status !== "recipe" && <p>{({ not_recipe: "Kein Rezept erkannt. Bitte eine Rezeptvorlage auswählen.", unreadable: "Vorlage nicht ausreichend lesbar. Bitte ein schärferes Foto aufnehmen.", needs_source_selection: "Rezeptgrenzen unklar. Bitte genau ein vollständiges Rezept auswählen." } as Record<string, string>)[job.result.status]}</p>}{job.result?.status === "recipe" && !job.result.recipe && <p>Dieser ältere Entwurf enthält nur eine Abschrift. Bitte das Original erneut auswählen und automatisch erkennen lassen.</p>}{job.result?.recipe && ["needs_review", "confirmed"].includes(job.state) && <button className="button primary" disabled={busy} onClick={() => void review()}>Fertiges Rezept ansehen</button>}{active ? <button className="button" onClick={() => void cancel()}>Auftrag abbrechen</button> : <button className="button" onClick={newImport}>Nächstes Rezept</button>}<p className="small">Nach dem Upload läuft die Erkennung bei geschlossenem Browser weiter, solange der Rechner und der lokale Dienst laufen. Bei Fehlern kein automatischer erneuter Anbieteraufruf.</p></div>}
     {error && <p role="alert">{error}</p>}
-  </section>;
+  </section></>;
 }

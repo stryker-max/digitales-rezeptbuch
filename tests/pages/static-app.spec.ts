@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 import sharp from "sharp";
-test("GitHub Pages subpath supports images, manual import, archive and offline cooking", async ({ page, context }, testInfo) => {
+import { createArchive } from "../../apps/web/src/lib/local-archive.ts";
+import { sha256, type LocalRecipe } from "../../apps/web/src/lib/local-store.ts";
+test("GitHub Pages subpath supports images, archive restore and offline cooking without a manual entry form", async ({ page, context }, testInfo) => {
   const errors: string[] = [], requests: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("request", (request) => requests.push(request.url()));
@@ -10,16 +12,14 @@ test("GitHub Pages subpath supports images, manual import, archive and offline c
   const background = await page.locator(".hero-photo").evaluate((element) => getComputedStyle(element).backgroundImage);
   expect(background).toContain("/digitales-rezeptbuch/beispielgerichte.webp");
   await page.getByRole("button", { name: "Rezept hinzufügen", exact: true }).click();
-  await expect(page.getByText(/KI-Erkennung benötigt einen eigenen Analyseserver/)).toBeVisible();
+  await expect(page.getByText(/Hier ist kein Analyseserver verbunden/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Selbst übertragen" })).toHaveCount(0);
   const png = await sharp({ create: { width: 100, height: 100, channels: 3, background: "white" } }).png().toBuffer();
-  await page.locator('input[type=file][accept="image/*,application/pdf"]').setInputFiles({ name: "synthetische-pages-testquelle.png", mimeType: "image/png", buffer: png });
-  await page.getByRole("button", { name: "Selbst übertragen", exact: true }).click();
-  await page.getByLabel("Titel", { exact: true }).fill("Synthetischer Pages-Test");
-  await page.getByRole("textbox", { name: "Vollständige Abschrift", exact: true }).fill("Künstliche Testquelle: 250 g Karotte. In die Pfanne geben.");
-  await page.getByLabel(/^Zutaten Eine Zeile/).fill("250 | g | Karotte");
-  await page.getByLabel(/^Arbeitsschritte/).fill("In die Pfanne geben.");
-  await page.getByLabel("Ich habe Abschrift, Zutaten und Schritte mit der Vorlage verglichen.").check();
-  await page.getByRole("button", { name: "Rezept lokal speichern", exact: true }).click();
+  const sourceBlob = new Blob([png], { type: "image/png" });
+  const recipe: LocalRecipe = { id: "391ef253-2384-4a6c-a14d-879ea6bb05b1", title: "Synthetischer Pages-Test", description: "Künstlicher Archivtest", demo: false, servings: null, estimatedMinutes: null, tags: [], ingredients: [{ id: "i1", name: "Karotte", amountText: "250 g", quantity: 250, unit: "g", group: "Gemüse" }], equipment: [], steps: [{ title: "Schritt 1", instruction: "In die Pfanne geben.", relatedIngredients: [] }], sourceText: "Künstliche Testquelle: 250 g Karotte. In die Pfanne geben.", sourceName: "synthetische-pages-testquelle.png", sourceType: "image/png", sourceBlob, sourceHash: await sha256(sourceBlob), createdAt: new Date().toISOString() };
+  const backup = await createArchive([recipe]);
+  await page.locator('input[type=file][accept="application/json,.json"]').setInputFiles({ name: "synthetische-pages-sicherung.json", mimeType: "application/json", buffer: Buffer.from(await backup.arrayBuffer()) });
+  await page.getByRole("button", { name: "Rezepte", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Synthetischer Pages-Test", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Rezepte", exact: true }).click();
   const downloading = page.waitForEvent("download");

@@ -5,20 +5,38 @@ import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { openJobs, claimJob, publishResult } from "../../apps/web/src/lib/analysis-server.ts";
 
-test("own recipe, plan, purchases and metadata survive offline reload and complete restore", async ({ page, context, browser }) => {
+test("automatically recognized recipe, plan, purchases and metadata survive offline reload and complete restore", async ({ page, context, browser }) => {
   const errors: string[] = []; page.on("pageerror", (error) => errors.push(error.message));
   const original = await sharp({ create: { width: 300, height: 300, channels: 3, background: "white" } }).png().toBuffer();
-  await page.goto("/");
+  const base = "http://127.0.0.1:3119";
+  await page.goto(base);
   await page.getByRole("button", { name: "Offline-Paket prüfen", exact: true }).waitFor();
   await page.getByRole("button", { name: "Rezept hinzufügen", exact: true }).click();
+  const automatic = page.getByRole("checkbox", { name: /^Automatisch erkennen:/ });
+  await expect(automatic).not.toBeChecked();
+  let uploads = 0;
+  page.on("request", (request) => { if (request.method() === "POST" && request.url() === `${base}/api/analysis`) uploads++; });
   await page.locator('input[type=file][accept="image/*,application/pdf"]').setInputFiles({ name: "synthetische-testvorlage.png", mimeType: "image/png", buffer: original });
-  await page.getByRole("button", { name: "Selbst übertragen" }).click();
-  await page.getByLabel("Titel", { exact: true }).fill("Synthetische Karottensuppe");
-  await page.getByLabel("Vollständige Abschrift", { exact: true }).fill("Synthetische Testquelle. 500 g Karotte. In der Pfanne garen, falls nötig.");
-  await page.getByLabel(/^Zutaten Eine Zeile/).fill("500 | g | Karotte");
-  await page.getByLabel(/^Arbeitsschritte/).fill("In der Pfanne garen, falls nötig.");
-  await page.getByLabel("Ich habe Abschrift, Zutaten und Schritte mit der Vorlage verglichen.").check();
-  await page.getByRole("button", { name: "Rezept lokal speichern" }).click();
+  await expect(page.getByRole("button", { name: "Foto automatisch erkennen", exact: true })).toBeDisabled();
+  expect(uploads).toBe(0);
+  await expect(page.getByRole("button", { name: "Selbst übertragen" })).toHaveCount(0);
+  const uploaded = page.waitForResponse((response) => response.request().method() === "POST" && response.url() === `${base}/api/analysis`);
+  // This deliberate opt-in grants future selected-file transmission. No Abo grant
+  // or selecting a file alone sends anything. No provider worker runs in this test.
+  await automatic.check(); expect((await uploaded).status()).toBe(202);
+  const db = openJobs(resolve(process.env.RECIPE_E2E_DIR!, "analysis.sqlite"));
+  try {
+    const job = claimJob(db, 100)!;
+    publishResult(db, job, {
+      status: "recipe", issues: [], blocks: [{ id: "b1", page: 1, text: "Synthetische Karottensuppe. 500 g Karotte. In der Pfanne garen, falls nötig. Künstliche Testnotiz." }],
+      recipe: { title: "Synthetische Karottensuppe", titleBlockIds: ["b1"], servings: null, servingsRaw: null, servingsBlockIds: [], ingredients: [{ amount: "500", unit: "g", name: "Karotte", blockIds: ["b1"] }], equipment: [], steps: [{ text: "In der Pfanne garen, falls nötig.", blockIds: ["b1"] }], notes: [{ text: "Künstliche Testnotiz.", blockIds: ["b1"] }], excludedBlocks: [] },
+    });
+  } finally { db.close(); }
+  await expect(page.getByRole("heading", { name: "Dein Rezept ist bereit.", exact: true })).toBeVisible();
+  await expect(page.getByText("500 g", { exact: true })).toBeVisible();
+  await expect(page.locator(".manual-fields h2")).toHaveText("Synthetische Karottensuppe");
+  await page.getByRole("button", { name: "Geprüft speichern", exact: true }).click();
+  expect(uploads).toBe(1);
   await expect(page.getByRole("heading", { name: "Synthetische Karottensuppe", exact: true })).toBeVisible();
   await page.getByLabel("Tags bearbeiten").fill("Gemüse, Eigener Test");
   await page.getByRole("heading", { name: "Tags", exact: true }).click();
@@ -47,6 +65,8 @@ test("own recipe, plan, purchases and metadata survive offline reload and comple
   const archiveText = await page.evaluate((url) => fetch(url).then((response) => response.text()), download.url());
   const archiveBuffer = Buffer.from(archiveText); const archive = JSON.parse(archiveText);
   expect(archive.version).toBe(2);
+  expect(archive.recipes[0].sourceNotes).toEqual(["Künstliche Testnotiz."]);
+  expect(archive.recipes[0].analysis.structured.ingredients[0].amount).toBe("500");
   expect(archive.recipes[0].sourceHash).toBe(createHash("sha256").update(original).digest("hex"));
   expect(archive.preferences.purchased["karotte|g"]).toBe(500);
   expect(archive.preferences.metadata[archive.recipes[0].id].tags).toContain("Eigener Test");
@@ -103,7 +123,7 @@ test("synthetic persistent analysis job requires user resolution and server conf
   try {
     const job = claimJob(db, 100)!;
     expect(job.id).toBe(id);
-    publishResult(db, job, { status: "recipe", blocks: [{ id: "b1", page: 1, text: "Synthetisch: 1 oder 7 Äpfel. In die Pfanne geben, falls nötig." }], issues: [{ id: "i1", message: "1 oder 7 Äpfel?", blockIds: ["b1"] }] });
+    publishResult(db, job, { status: "recipe", blocks: [{ id: "b1", page: 1, text: "Synthetische KI-Prüfung. 1 oder 7 Apfel. In die Pfanne geben, falls nötig." }], issues: [{ id: "i1", message: "1 oder 7 Äpfel?", blockIds: ["b1"] }], recipe: { title: "Synthetische KI-Prüfung", titleBlockIds: ["b1"], servings: null, servingsRaw: null, servingsBlockIds: [], ingredients: [{ amount: "1", unit: null, name: "Apfel", blockIds: ["b1"] }], equipment: [], steps: [{ text: "In die Pfanne geben, falls nötig.", blockIds: ["b1"] }], notes: [], excludedBlocks: [] } });
   } finally { db.close(); }
   const draft = { title: "Synthetische KI-Prüfung", servings: "", transcription: "1 Apfel. In die Pfanne geben, falls nötig.", ingredients: "1 | Stück | Apfel", equipment: "", steps: "In die Pfanne geben, falls nötig.", confirmed: true };
   const rejected = await request.post(`${base}/api/analysis/${id}`, { headers: { Origin: base, Authorization: `Bearer ${token}` }, data: { action: "confirm", draft, resolutions: {} } });
@@ -111,14 +131,10 @@ test("synthetic persistent analysis job requires user resolution and server conf
   await page.goto(base);
   await page.evaluate(({ id, token }) => localStorage.setItem("digitales-rezeptbuch-analysis-job-v1", JSON.stringify({ id, token })), { id, token });
   await page.getByRole("button", { name: "Rezept hinzufügen", exact: true }).click();
-  await page.getByRole("button", { name: "Abschrift und Original prüfen", exact: true }).click();
-  await page.getByLabel("Titel", { exact: true }).fill(draft.title);
-  await page.getByRole("textbox", { name: "Vollständige Abschrift", exact: true }).fill(draft.transcription);
-  await page.getByLabel(/^Zutaten Eine Zeile/).fill(draft.ingredients);
-  await page.getByLabel(/^Arbeitsschritte/).fill(draft.steps);
+  await expect(page.getByRole("heading", { name: "Dein Rezept ist bereit.", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Geprüft speichern", exact: true })).toBeDisabled();
   await page.getByLabel("Klärung: 1 oder 7 Äpfel?", { exact: true }).fill("Im synthetischen Original 1 Apfel geprüft.");
-  await page.getByLabel("Ich habe Abschrift, Zutaten und Schritte mit der Vorlage verglichen.").check();
-  await page.getByRole("button", { name: "Rezept lokal speichern", exact: true }).click();
+  await page.getByRole("button", { name: "Geprüft speichern", exact: true }).click();
   await expect(page.getByRole("heading", { name: draft.title, exact: true })).toBeVisible();
   const status = await request.get(`${base}/api/analysis/${id}`, { headers: { Authorization: `Bearer ${token}` } });
   expect((await status.json()).state).toBe("confirmed");

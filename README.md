@@ -4,57 +4,45 @@
 
 Next.js-/React-App für eigene Foto-/PDF-Rezepte, Originalvergleich, Kochen, Wochenplan und Einkauf. Navy-/Blau-Oberfläche mit großen Schaltflächen und festen Kochpfeilen. Lokal benutzbar und als browserlokale Webversion veröffentlicht; noch keine fertig abgenommene Cloud-Anwendung mit geräteübergreifender Sammlung.
 
-## App öffnen
+## App öffnen und Foto erkennen
 
-**[Digitales Rezeptbuch starten](https://stryker-max.github.io/digitales-rezeptbuch/)**
-
-Auf dem iPhone in Safari öffnen und über **Teilen → Zum Home-Bildschirm** hinzufügen. Neue Rezepte über „Rezept hinzufügen“ selbst aus Foto/PDF übertragen. Vorhandene lokale Sammlung zuerst sichern und auf dieser Webadresse importieren. Eigene Rezepte bleiben im jeweiligen Browser; regelmäßig „Sammlung sichern“ verwenden.
-
-Die [GitHub-Pages-Webversion](docs/GITHUB-PAGES.md) enthält App-Code und künstliche Beispiele. KI-Abschrift benötigt weiterhin einen gesonderten Server; die Webversion bietet manuelle Übernahme. Keine automatische Cloud-Synchronisierung.
-
-## Starten
-
-Node.js **24 oder neuer**, npm. Im Projektordner:
+**Mit ChatGPT-Abo lokal: http://127.0.0.1:3125/**
 
 ```powershell
 npm ci
-npm run dev
-```
-
-Öffnen: `http://127.0.0.1:3000`. Für Offline-Nutzung stattdessen Produktionsbetrieb:
-
-```powershell
 npm run build
-npm start
+npm run abo:start
 ```
 
-**Adresse, Port und Browserprofil beibehalten.** `localhost`, `127.0.0.1` und verschiedene Ports besitzen getrennte lokale Bestände. Vor Entwicklung am selben Ursprung einen registrierten Produktions-Service-Worker abmelden; keine Rezeptdaten löschen. Entwicklungs- und Produktionsserver nicht gleichzeitig auf gleichem Port starten.
+Windows, Node.js 24+. Für Entwicklung `npm run abo`. Server und Analyseworker starten gemeinsam. ChatGPT-Verbindung über „Continue with ChatGPT“ freigeben. Einmal freiwillig „Automatisch erkennen … an OpenAI senden“ einschalten, dann **Foto aufnehmen → automatisch ausgefülltes Rezept ansehen → Geprüft speichern**. Kein Abtippen oder manuelles Zuordnen. Nur bei Lesefragen oder gewünschter Korrektur etwas ergänzen. Die Übertragungsfreigabe bleibt unabhängig von der Abo-Anmeldung und ist jederzeit ausschaltbar. [Ausführliche Anleitung, Grenzen und Datenschutz](docs/CHATGPT-ABO.md).
+
+**[Öffentliche Webversion auf GitHub Pages](https://stryker-max.github.io/digitales-rezeptbuch/)**: Sammlung wiederherstellen, planen, sichern und offline kochen. Dort gibt es keinen KI-Server und keine automatische Abo-Erkennung. Der frühere manuelle Foto-/PDF-Übertragungsweg wurde auf Nutzerwunsch entfernt; vorhandene Rezepte und Sicherungen bleiben erhalten. [Webversion](docs/GITHUB-PAGES.md).
+
+**Adresse, Port und Browserprofil beibehalten.** Verschiedene Ursprünge besitzen getrennte lokale Bestände. Vor Ursprungswechsel Sammlung sichern und auf Zieladresse wiederherstellen. Browserdaten nicht löschen. Entwicklungs- und Produktionsbetrieb nicht gleichzeitig gegen denselben `.next`-Ordner ausführen. Für Offline-Nutzung Produktionsbetrieb und „Offline-Paket prüfen“ verwenden.
+
+Ohne KI-Verbindung bleiben Sammlung und Kochen benutzbar: `npm run dev` oder nach Build `npm start`, Port 3000. Eine neue Vorlage erfordert eine eingerichtete echte Erkennung; kein stiller Demo-Ersatz.
 
 ## Implementierter Stand
 
 - Sammlung, Titel-/Zutaten-/Tag-/Abschriftsuche, Favoriten. Automatische korrigierbare Tags mit Beleg und Regelversion; keine automatisch zugesicherten Ernährungs-/Allergenmerkmale.
-- Manuelle Übernahme eines Fotos/PDFs mit Originalvergleich und Nutzerbestätigung. Originalbytes und SHA-256 in IndexedDB. HEIC/HEIF manuell aufbewahrbar, aber noch keine verlässlich getestete Vorschau/Konvertierung.
+- Automatische Foto-/PDF-Übernahme über freigegebenes ChatGPT-Abo: Titel, Portionen, Zutaten, Utensilien, Schritte und Hinweise mit Quellblockherkunft. Fertiger Entwurf ohne Abtippen; Nutzer bestätigt das Ergebnis. Originalbytes und SHA-256 in IndexedDB sowie privater lokaler Auftragsdatenbank. HEIC/HEIF-Erkennung noch offen.
 - Große Kochansicht: Utensilien, Zutaten, Überblick, Schritte, Originalabschrift und fester Abschluss. Letzten Kochstand wieder aufnehmen. Rezept-IDs bezeichnen unveränderliche Fassungen; Bearbeitungs-/Versionsoberfläche noch offen.
 - Manuelle, automatische und gemischte Wochenplanung, je ein Rezept pro Tag, automatische Einkaufsliste. Ohne bekannte Portionsbasis ausdrücklich **Rezeptmengen**. Gleicher Faktor in Planung, Einkauf und Kochzutaten; Originalzeiten/-temperaturen bleiben unverändert.
 - g/kg/dag und ml/l zusammenrechnen, Brüche lesen, offene Mengen erhalten. Gekaufte Mengen bleiben bei Planänderung berücksichtigt. Freie Einkaufsposten ergänzen/abhaken. Offene Mengen bleiben „Menge prüfen“ und sind noch nicht mengenmäßig abhakbar. Verwaiste Kaufzuordnungen bleiben gespeichert, haben noch keine eigene Anzeige.
 - **Sicherung v2** mit eigenen Rezepten, Originalbytes/Hash, vorhandener KI-Abschriftsherkunft, Plan/Einkauf, eigenen Positionen, Favoriten, Checklisten/Kochposition, Tagkorrekturen, Lebensmittelkatalog und Zuordnungen. Alte v1-Dateien bleiben lesbar. Abweichende Inhalte unter gleicher Rezept-ID blockieren den Import. Einstellungen erst nach ausdrücklicher Übernahme ersetzen.
 - **Offline im Produktionsbetrieb:** versionsgebundene App-Dateien im Service Worker, Rezepte/Originale in IndexedDB, Einstellungen im lokalen Speicher. „Offline-Paket prüfen“ liest App-Dateien und prüft alle gespeicherten Original-Hashes. Updates werden angeboten; Updateaktion ist im Kochmodus deaktiviert. Browser kann Speicher trotzdem löschen; regelmäßig unabhängig sichern.
 - **Nährwertrechnung:** versionierten Lebensmittelkatalog laden und passende Datensätze je Zutat wählen, danach automatische deterministische Rechnung. Quellen/Zustand/Version/Lizenz und Rechenweg sichtbar. Fehlende Werte bleiben unvollständige Teilsummen; keine erfundenen KI-Werte oder pauschalen ml-/Stückfaktoren. Ein echter BLS-/USDA-Bestand und sichere automatische Zuordnung sind noch nicht enthalten. [Katalogformat](docs/LEBENSMITTELKATALOG.md).
-- **Optionaler echter KI-Abschriftpfad:** persistente SQLite-Jobs, separater Worker mit Responses-API, Quellblöcke/Lesefragen, serverseitige Freigabe. Der Nutzer strukturiert die erkannte Abschrift selbst in Zutaten/Schritte; automatische strukturierte Extraktion und Feld-zu-Block-Zuordnung sind noch offen. [Einrichtung](docs/LOKALER-BETRIEB.md).
+- **Echter KI-Pfad:** persistente SQLite-Jobs und separater Worker, automatische Gliederung, Quellblöcke/Lesefragen und serverseitige Nutzerfreigabe. Abo-Anmeldedaten Windows-verschlüsselt lokal, keine API-Schlüssel nötig, kein bezahlter API-Fallback. Echter Bild-/PDF-Durchlauf mit künstlichen Vorlagen nachgewiesen. Bestehender expliziter API-Modus bleibt als Alternative. [Lokaler Betrieb](docs/LOKALER-BETRIEB.md).
 
 Vier vorinstallierte Rezepte und deren KI-Bilder sind ausdrücklich künstliche Beispiele. Automatische Wochenvorschläge berücksichtigen aktuell auch diese klar markierten Beispiele. Harte Ausschlüsse, Zeitfilter und ein reiner Eigene-Rezepte-Modus sind noch offen.
 
-## Optionale KI aktivieren
+## KI und Grenzen
 
-`apps/web/.env.example` nach `apps/web/.env.local` kopieren. API-Schlüssel, geeignetes Bildmodell mit Structured Outputs, absoluten privaten Datenordner und `LOCAL_ANALYSIS_ENABLED=true` setzen. Webserver neu starten; zweites Terminal:
+Der empfohlene persönliche Windows-Zugang nutzt das ausdrücklich freigegebene ChatGPT-Abo. Accountmodelle werden tatsächlich geladen, Abo-Nutzung in ChatGPT verwaltet. Standard lokal 20 Anbieteraufrufe je UTC-Tag im Abo-Starter, keine automatische Wiederholung nach unklaren Fehlern. JPEG/PNG/WebP bis 20 Millionen Pixel und PDF mit 1–10 Seiten eines einzelnen vollständigen Rezepts, jeweils bis 25 MB. Bilder als Arbeitskopie ohne EXIF, PDFs vollständig an OpenAI. Unveränderte Originale bleiben privat lokal. [Abo-Anleitung](docs/CHATGPT-ABO.md).
 
-```powershell
-npm run worker
-```
+KI bleibt fehlbar. Feldtexte und Mengen müssen in den referenzierten Blöcken vorkommen; jeder Block wird zugeordnet oder begründet ausgeschlossen. Das beweist keine vollständige oder richtige Abschrift. Offene Lesefragen blockieren „Geprüft speichern“; der Nutzer löst die Bestätigung aus. Keine frei erfundenen Nährwerte, keine zusätzlichen KI-Aufrufe beim Kochen. Keine persönlichen Rezepte für die Entwicklung übertragen; tatsächliche Anbieterprüfung mit künstlichen Foto-/PDF-Vorlagen.
 
-Ohne diese Konfiguration gibt es keinen Demo-Fallback. Für KI unterstützt: JPEG/PNG/WebP bis 20 Millionen Pixel sowie PDF mit 1–10 Seiten eines einzelnen Rezepts, bis 25 MB. HEIC im KI-Pfad noch nicht unterstützt. Bilder werden als getrennte orientierte Kopie ohne EXIF übertragen; PDF nach Prüfung vollständig. Vor Start muss der Nutzer die Übertragung an OpenAI ausdrücklich wählen.
-
-Standardlimit: fünf atomar reservierte Anbieteraufrufe je UTC-Tag; **kein Euro-Monatsbudget**. Nach unklarem Abbruch keine automatische kostenpflichtige Wiederholung. Worker muss tatsächlich laufen. Lokaler Host-/Ursprungsschutz und geheimer Zugriffscode je Job ersetzen keine Cloud-Anmeldung/RLS. Nicht per Tunnel oder Proxy veröffentlichen. In dieser Weiterentwicklung wurden keine echten Rezepte an OpenAI geschickt und keine bezahlte Analyse getestet.
+Der lokale Dienst ist ausschließlich an Loopback gebunden. Kein Cloudkonto/RLS, keine automatische Gerätesynchronisierung. Nicht per Tunnel/Proxy veröffentlichen. Öffentliche GitHub Pages führen keine Abo-Aufrufe aus; ferngehostete Abo-Apps benötigen einen gesondert erlaubten Zugang. Der bereits vorhandene API-Schlüssel-Modus ist optional separat konfigurierbar, wurde hier nicht kostenpflichtig getestet und wird nie als Abo-Fallback benutzt.
 
 ## Sichern und Gerätewechsel
 
@@ -66,17 +54,21 @@ Maximal 100 Rezepte, 25 MB je Original und 100 MB Sicherungsdatei. Lokale Analys
 
 ```powershell
 npm test
+npm run test:chatgpt
 npm run typecheck
 npm run typecheck:worker
 npm run build
 npm run test:e2e
+npm run typecheck:pages
+npm run build:pages
+npm run test:pages
 ```
 
-Browsertests: isolierte Chrome-Profile, Produktionsserver auf Ports 3118/3119; Chrome muss installiert sein. Der zweite Server verwendet ausschließlich synthetische Analysekonfiguration ohne Anbieteraufruf. Echte iPhones/iPads und Home-Bildschirm-Betrieb sind separat offen. [Prüfbericht](docs/PRUEFBERICHT-2026-10-27.md). Auf diesem Windows-System braucht der Produktionsbuild normale Dateirechte. Webpack vermeidet die hier fehlgeschlagene Turbopack-Verzeichnisverknüpfung.
+Browsertests: isolierte Chrome-Profile, Produktionsserver auf Ports 3118/3119; Chrome muss installiert sein. Der zweite Server verwendet ausschließlich synthetische Analysekonfiguration ohne Anbieteraufruf. Echte iPhones/iPads und Home-Bildschirm-Betrieb sind separat offen. [Aktueller Prüfbericht](docs/PRUEFBERICHT-ABO-2026-10-27.md). Auf diesem Windows-System braucht der Produktionsbuild normale Dateirechte. Webpack vermeidet die hier fehlgeschlagene Turbopack-Verzeichnisverknüpfung.
 
 ## Nächste Schritte
 
-1. Echte autorisierte KI-Testquellen und Anbieterbudget; strukturierte Extraktion, Herkunft je Feld, Versionsbearbeitung und geprüfte HEIC-Aufbereitung ergänzen.
+1. Handschrift und vielfältige autorisierte Quellen prüfen, ausgelassene Teilangaben stärker erkennen, Versionsbearbeitung und geprüfte HEIC-Aufbereitung ergänzen. Automatische Gliederung und Feldherkunft sind implementiert; Qualitätsabnahme auf echten Rezepten bleibt offen.
 2. Echten versionierten Lebensmittelkatalog samt Lizenz importieren, sichere automatische Zuordnung und belegte Faktoren ergänzen.
 3. Eigentümerkonto, private serverseitige Sammlung, RLS für Tabellen/Dateien, konfliktgeschützte Gerätesynchronisierung und unabhängige Sicherungen bauen und mit zwei Konten prüfen. Bestehende lokale Bestände erst exportieren und nach validierter Migration übernehmen.
 4. Echte iPhone-/iPad-Abnahme einschließlich Kamera, Offline/Updates, Speicher, VoiceOver, Timer und Wake Lock.

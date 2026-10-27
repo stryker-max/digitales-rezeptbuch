@@ -10,7 +10,7 @@ export type LocalRecipe = Recipe & {
   sourceHash: string;
   sourceBlob: Blob;
   createdAt: string;
-  analysis?: { model: string; promptVersion: string; blocks: AnalysisDraft["blocks"]; issues: AnalysisDraft["issues"]; resolutions: Record<string, string>; originalTranscription: string };
+  analysis?: { model: string; promptVersion: string; blocks: AnalysisDraft["blocks"]; issues: AnalysisDraft["issues"]; resolutions: Record<string, string>; originalTranscription: string; structured?: AnalysisDraft["recipe"] };
 };
 
 function openDatabase(): Promise<IDBDatabase> {

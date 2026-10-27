@@ -30,6 +30,7 @@ export type Recipe = {
   equipment: Equipment[];
   steps: RecipeStep[];
   sourceText: string;
+  sourceNotes?: string[];
   demo: boolean;
 };
 

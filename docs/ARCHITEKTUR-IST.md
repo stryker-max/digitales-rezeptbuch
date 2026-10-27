@@ -14,7 +14,7 @@ Sicherung v2 erweitert v1 um Einstellungen und optionale Analyseherkunft. Alle E
 
 Nach dem Next-Build erzeugt `scripts/build-offline.mjs` einen Service Worker mit Build-ID und Liste aller JS-/CSS-/Fontdateien, Manifest, Symbolen und Beispieldarstellung. Installation lädt das komplette Paket; Installationsfehler verwerfen das neue Cachepaket. Alte Pakete werden erst bei Aktivierung entfernt. Aktive alte Clients verhindern reguläre sofortige Aktivierung. Bewusste Updateaktion ist beim Kochen deaktiviert.
 
-Nur bekannte App-Dateien und Navigation auf `/` werden bedient; keine API-, RSC- oder persönlichen Daten im gemeinsamen Shellcache. Originale bleiben in IndexedDB. Prüfung liest alle App-Dateien und Originale samt Hash und fordert optional beständigen Speicher an; sie verspricht keine unabhängige Sicherung. Im lokalen Zwischenstand steht der gesamte Browserbestand offline bereit; gezielte Cloudpakete mit Kontentrennung kommen später. Anmeldung und Logout gibt es noch nicht.
+Nur bekannte App-Dateien und Navigation auf `/` werden bedient; keine API-, RSC- oder persönlichen Daten im gemeinsamen Shellcache. Originale bleiben in IndexedDB. Prüfung liest alle App-Dateien und Originale samt Hash und fordert optional beständigen Speicher an; sie verspricht keine unabhängige Sicherung. Im lokalen Zwischenstand steht der gesamte Browserbestand offline bereit; gezielte Cloudpakete mit Kontentrennung kommen später. Ein Cloudkonto/Logout mit Offline-Kontentrennung gibt es noch nicht. Die davon getrennte lokale ChatGPT-Abo-Verbindung kann verbunden und getrennt werden.
 
 ## Lokaler Analysepfad
 
@@ -24,7 +24,7 @@ Loopback-/Ursprungsschutz und zufälliger Zugriffscode je Auftrag; serverseitig 
 
 Ein Worker reserviert Auftrag und Tagesaufruf atomar mit `BEGIN IMMEDIATE`; höchstens drei offene und 100 gespeicherte Jobs. Pro Auftrag ein Anbieteraufruf, Timeout 180 Sekunden. Verwaiste Verarbeitung wird nach fünf Minuten beim nächsten Worker-Durchlauf als Fehler markiert. Keine automatische Wiederholung unklar berechneter Anfragen. Abbruch verhindert spätere Ergebnisveröffentlichung. Tagesaufruflimit ist kein Monatskostenbudget. Für Cloud bleibt PostgreSQL/Worker mit Eigentümerprüfung, Budgetreservierung und Leases der Zielweg.
 
-Responses-API mit `store:false`, ohne Werkzeuge/URL-Nachladen, versioniertem Prompt und gemeinsamem Schema für vollständige blockweise Abschrift, Seiten und Lesefragen. Nutzer strukturiert diese selbst; automatische Zutaten-/Schrittextraktion und Herkunft je Feld fehlen noch. Ungeprüfte Abschrift, Modell-/Promptversion und Entscheidungen bleiben separat erhalten. Server prüft Pflichtfelder, Zustand und jede Lesefrage vor Freigabe; bestätigte Fassung wird unveränderlich gespeichert. Formale Prüfungen beweisen weder Handschriftrichtigkeit noch Vollständigkeit der Nutzerbearbeitung.
+Responses-API mit `store:false`, ohne Werkzeuge/URL-Nachladen, versioniertem Prompt und gemeinsamem Schema für vollständige blockweise Abschrift, Seiten und Lesefragen. Das gemeinsame Schema ergänzt eine automatisch ausgefüllte Rezeptgliederung samt Herkunft je Feld. Übernommene Texte/Mengen werden auf wörtliche Belege geprüft; jeder Block muss zugeordnet oder begründet ausgeschlossen sein. Keine Vollständigkeitsgarantie innerhalb eines verwendeten Blocks. Der frühere manuelle Übertragungsweg wurde auf ausdrücklichen Nutzerwunsch entfernt; Korrekturen sind optional eingeklappt. Ungeprüfte Abschrift, Modell-/Promptversion und Entscheidungen bleiben separat erhalten. Server prüft Pflichtfelder, Zustand und jede Lesefrage vor Freigabe; bestätigte Fassung wird unveränderlich gespeichert. Formale Prüfungen beweisen weder Handschriftrichtigkeit noch Vollständigkeit der Nutzerbearbeitung.
 
 ## Metadaten
 
@@ -35,3 +35,9 @@ Nährwerte: bewusst gewählte Lebensmittel/Zustände aus importiertem Katalog mi
 ## Dokumentationsquellen
 
 Am 27. Oktober 2026 geöffnet: [Next.js PWA](https://nextjs.org/docs/app/guides/progressive-web-apps), [OpenAI File Inputs](https://developers.openai.com/api/docs/guides/file-inputs), [OpenAI Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs). Keine Modellqualitätsbewertung daraus abgeleitet.
+
+## Entscheidung: persönliches ChatGPT-Abo statt API-Schlüssel
+
+Am 27.10.2026 ausdrücklich vom Nutzer gewählt. [Abo-Betrieb](CHATGPT-ABO.md): eigenes offizielles OAuth-Profil, Windows-DPAPI, Kontomodellkatalog, eigener Worker. Anbieterjobs speichern `auth_kind`, `profile_id` und `prompt_version`. SQLite ergänzt diese Spalten verlustfrei; bestehende Jobs bleiben API-Jobs mit alter Promptversion, bestehende Originale unverändert. Nur Aufträge des passenden Providers/Kontos verarbeiten. Kein API-Fallback. Eigene Übertragungsfreigabe für ausgewählte Rezeptdateien zunächst aus; nur tatsächliche Nutzerwahl schaltet automatischen Start ein. Nutzerbestätigung bleibt serverseitig erforderlich. Bestehende manuelle Rezepte/Archive bleiben lesbar, neue Originalnotizen und strukturierte Herkunft werden additiv gesichert. IndexedDB-Version bleibt unverändert.
+
+Lokaler Produktionsstarter `npm run abo:start` hält Port und private Verzeichnisse des Entwicklungsstarters bei. Öffentliche Pages bleiben statisch und ohne Abo-Server. Diese Entscheidung ist keine produktive Cloudmigration und erlaubt keine Veröffentlichung privater Zugangsdaten oder Rezeptoriginale.

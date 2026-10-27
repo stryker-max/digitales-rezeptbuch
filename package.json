@@ -4,9 +4,12 @@
   "type": "module",
   "version": "0.1.0",
   "workspaces": [
-    "apps/*"
+    "apps/*", "packages/*"
   ],
   "scripts": {
+    "postinstall": "npm run build --workspace @rezeptbuch/chatgpt-local",
+    "build:chatgpt": "npm run build --workspace @rezeptbuch/chatgpt-local",
+    "test:chatgpt": "npm run test --workspace @rezeptbuch/chatgpt-local",
     "dev": "npm run dev --workspace @rezeptbuch/web",
     "build": "npm run build --workspace @rezeptbuch/web && node scripts/build-offline.mjs",
     "build:pages": "node scripts/build-pages.mjs",
@@ -17,7 +20,10 @@
     "test": "node --experimental-strip-types --test apps/web/src/lib/*.test.ts",
     "test:e2e": "playwright test",
     "worker": "node --env-file-if-exists=apps/web/.env.local --experimental-strip-types apps/worker/worker.ts",
-    "typecheck:worker": "tsc --noEmit --module nodenext --moduleResolution nodenext --target es2022 --allowImportingTsExtensions --skipLibCheck apps/worker/worker.ts"
+    "worker:abo": "node --env-file-if-exists=apps/web/.env.local --experimental-strip-types apps/worker/abo-worker.ts",
+    "abo": "node scripts/start-abo.mjs",
+    "abo:start": "node scripts/start-abo.mjs --production",
+    "typecheck:worker": "tsc --noEmit --module nodenext --moduleResolution nodenext --target es2022 --allowImportingTsExtensions --skipLibCheck apps/worker/worker.ts apps/worker/abo-worker.ts"
   },
   "engines": {
     "node": ">=24.0.0"

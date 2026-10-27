@@ -28,6 +28,20 @@ test("persisted queue deduplicates, protects capabilities and reserves daily cal
     assert.equal(authorize(db, next.id, next.token)?.state, "failed");
   } finally { db.close(); }
 });
+test("API and ChatGPT jobs remain separate and a profile change cannot reuse an import ID", () => {
+  const db = openJobs(":memory:");
+  try {
+    const api = add(db);
+    const subscription = { ...api, id: randomUUID(), token: randomUUID(), authKind: "chatgpt" as const, profileId: "synthetic-profile" };
+    enqueue(db, subscription);
+    assert.equal(claimJob(db, 10)?.id, api.id);
+    assert.equal(claimJob(db, 10), undefined);
+    const job = claimJob(db, 10, "chatgpt")!;
+    assert.equal(job.id, subscription.id);
+    assert.equal(job.profile_id, subscription.profileId);
+    assert.throws(() => enqueue(db, { ...subscription, profileId: "another-synthetic-profile" }), /Konflikt|konflikt/);
+  } finally { db.close(); }
+});
 test("review blocks open issues and confirmation is immutable and idempotent", () => {
   const db = openJobs(":memory:");
   try {

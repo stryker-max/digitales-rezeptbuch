@@ -1,3 +1,5 @@
+> Historischer Zwischenstand vor Abo-Anbindung und automatischer Rezeptgliederung. Aktuell gilt der [Abo-Prüfbericht](PRUEFBERICHT-ABO-2026-10-27.md); der manuelle Übertragungsweg wurde inzwischen entfernt.
+
 # Prüfbericht — 27. Oktober 2026
 
 Weiterbau ab Commit `1988cd5`, anfänglich sauberes Arbeitsverzeichnis. Lokale Entwicklungsfassung, keine produktive oder vollständige Abnahme. Sämtliche neuen Testquellen sind künstlich; keine privaten Originalrezepte wurden gelesen, hochgeladen oder in Git aufgenommen. Vorhandene persönliche Browserprofile wurden nicht geöffnet oder bereinigt.

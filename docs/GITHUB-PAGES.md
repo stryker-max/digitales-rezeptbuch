@@ -8,7 +8,7 @@ Erste Veröffentlichung am 27. Oktober 2026 erfolgreich: [GitHub-Build und Deplo
 
 GitHub Pages stellt die browserlokale App über HTTPS bereit. Eigene Rezepte, Fotos und PDFs werden dort weiterhin ausschließlich im jeweiligen Browser gespeichert. Die öffentliche Website enthält App-Code und künstliche Beispiele, keine persönliche Sammlung. Auf einem zweiten Gerät gibt es einen eigenen Bestand; Sicherungsdatei bewusst übertragen und importieren. Keine automatische Cloud-Synchronisierung.
 
-Die KI-Abschrift mit lokalem SQLite-/Node-Worker ist im statischen Webbuild ausdrücklich deaktiviert. Es gibt dort keine Server-API und keinen Anbieteraufruf. Sammlung, manuelle Foto-/PDF-Übernahme, Kochen, Tags, importierte Nährwertdaten, Plan, Einkauf, Export/Restore und Offlinepaket bleiben dieselben React-Komponenten wie im lokalen Next.js-Betrieb.
+Die KI-Abschrift mit lokalem SQLite-/Node-Worker ist im statischen Webbuild ausdrücklich deaktiviert. Es gibt dort keine Server-API und keinen Anbieteraufruf. Sammlung, Wiederherstellung, Kochen, Tags, importierte Nährwertdaten, Plan, Einkauf, Export/Restore und Offlinepaket bleiben dieselben React-Komponenten wie im lokalen Next.js-Betrieb.
 
 ## Technischer Veröffentlichungsweg
 
@@ -29,3 +29,5 @@ Geprüft im isolierten Chrome-Browser unter echtem Unterpfad: Beispielbild, manu
 Auf dem iPhone nach erfolgreicher Veröffentlichung in Safari öffnen, über Teilen → Zum Home-Bildschirm hinzufügen. Vor Offline-Nutzung einmal online öffnen und „Offline-Paket prüfen“ verwenden. Browserdaten regelmäßig über „Sammlung sichern“ unabhängig aufbewahren. Lokale Rezepte vom Rechner zunächst exportieren und auf der Webadresse importieren; sie wechseln nicht automatisch auf den neuen Ursprung.
 
 Quellen: [GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site), [Vite: GitHub Pages](https://vite.dev/guide/static-deploy.html#github-pages), am 27. Oktober 2026 geöffnet. Veröffentlichungserfolg anhand tatsächlicher GitHub-Deploymentdaten und erreichbarer Website geprüft.
+
+Auf Nutzerwunsch wurde der manuelle Übertragungsweg entfernt. Automatische Foto-/PDF-Erkennung über das ChatGPT-Abo steht in der lokalen Windows-App bereit; sie ist kein Bestandteil des statischen Pages-Servers. Bestehende Rezepte und v1/v2-Sicherungen bleiben nutzbar. [Abo-Anleitung](CHATGPT-ABO.md).

@@ -28,6 +28,7 @@ function decodeBase64(value: string): Uint8Array {
 const shortText = (value: unknown, max: number): value is string => typeof value === "string" && value.length <= max;
 
 export function validateRecipeContent(entry: Record<string, unknown>): void {
+  if (entry.sourceNotes !== undefined && (!Array.isArray(entry.sourceNotes) || entry.sourceNotes.length > 100 || !entry.sourceNotes.every((note: unknown) => shortText(note, 4000)))) throw new Error("Ungültige Originalhinweise.");
   if (!shortText(entry.description, 1000) || !shortText(entry.sourceText, 1_000_000)
     || !shortText(entry.createdAt, 40) || !Number.isFinite(Date.parse(entry.createdAt))
     || !Array.isArray(entry.tags) || entry.tags.length > 20 || !entry.tags.every((tag: unknown) => shortText(tag, 50))
@@ -108,8 +109,8 @@ export async function readFullArchive(file: File): Promise<{ recipes: LocalRecip
     if (entry.analysis !== undefined) {
       const a = entry.analysis as NonNullable<LocalRecipe["analysis"]>;
       if (!a || !shortText(a.model, 200) || !shortText(a.promptVersion, 200) || !shortText(a.originalTranscription, 1000000) || !a.resolutions || typeof a.resolutions !== "object" || Array.isArray(a.resolutions) || Object.keys(a.resolutions).length > 100 || !Object.values(a.resolutions).every((text) => shortText(text, 2000))) throw new Error("Ungültige Analyseherkunft.");
-      validateAnalysis({ status: "recipe", blocks: a.blocks, issues: a.issues }, 10);
-      analysis = { model: a.model, promptVersion: a.promptVersion, originalTranscription: a.originalTranscription, blocks: a.blocks, issues: a.issues, resolutions: a.resolutions };
+      validateAnalysis({ status: "recipe", blocks: a.blocks, issues: a.issues, recipe: a.structured }, 10);
+      analysis = { model: a.model, promptVersion: a.promptVersion, originalTranscription: a.originalTranscription, blocks: a.blocks, issues: a.issues, resolutions: a.resolutions, ...(a.structured ? { structured: a.structured } : {}) };
     }
     ids.add(entry.id);
     const bytes = decodeBase64(entry.sourceBase64);
@@ -125,6 +126,7 @@ export async function readFullArchive(file: File): Promise<{ recipes: LocalRecip
       equipment: entry.equipment as LocalRecipe["equipment"],
       steps: entry.steps as LocalRecipe["steps"],
       sourceText: entry.sourceText,
+      ...(entry.sourceNotes ? { sourceNotes: entry.sourceNotes as string[] } : {}),
       sourceName: entry.sourceName, sourceType: entry.sourceType,
       sourceHash: entry.sourceHash, sourceBlob,
       createdAt: entry.createdAt as string,
@@ -138,6 +140,6 @@ export async function readFullArchive(file: File): Promise<{ recipes: LocalRecip
 }
 
 export function sameRecipeContent(a: LocalRecipe, b: LocalRecipe): boolean {
-  const content = (r: LocalRecipe) => JSON.stringify([r.title, r.description, r.sourceHash, r.sourceText, r.servings, r.ingredients, r.equipment, r.steps, r.tags, r.sourceName, r.sourceType, r.createdAt, r.analysis]);
+  const content = (r: LocalRecipe) => JSON.stringify([r.title, r.description, r.sourceHash, r.sourceText, r.servings, r.ingredients, r.equipment, r.steps, r.tags, r.sourceName, r.sourceType, r.createdAt, r.analysis, r.sourceNotes]);
   return content(a) === content(b);
 }
