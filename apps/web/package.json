@@ -12,6 +12,8 @@
   "dependencies": {
     "@neon/functions": "0.11.0",
     "@rezeptbuch/chatgpt-local": "*",
+    "@simplewebauthn/browser": "14.0.0",
+    "@simplewebauthn/server": "14.0.3",
     "lucide-react": "1.61.0",
     "next": "16.4.3",
     "pdf-lib": "1.17.1",

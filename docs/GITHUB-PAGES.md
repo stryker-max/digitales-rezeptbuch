@@ -14,7 +14,7 @@ Neue bestätigte KI-Rezepte samt Originalen werden auf weiteren angemeldeten Ger
 
 ## Offline und iPhone/iPad
 
-In Safari öffnen, nach Wunsch zum Home-Bildschirm hinzufügen. Auf jedem Gerät mit dem persönlichen App-Passwort anmelden. „Offline-Paket prüfen“ kontrolliert App-Dateien und gespeicherte Original-Prüfsummen. Bereits gespeicherte Rezepte lassen sich danach offline kochen; neue KI-Erkennung braucht Internet. Updates bewusst übernehmen, nicht während laufender Kochschritte. Browser können lokale Daten trotzdem löschen.
+In Safari öffnen, nach Wunsch zum Home-Bildschirm hinzufügen. Einmal eigenen Code oder Passwort ohne Mindestlänge/Zeichenregeln festlegen, dann auf dem iPhone „Face ID / Passkey einrichten“ wählen. Weitere Anmeldungen per Passkey oder Code/Passwort. „Offline-Paket prüfen“ kontrolliert App-Dateien und gespeicherte Original-Prüfsummen. Bereits gespeicherte Rezepte lassen sich danach offline kochen; neue KI-Erkennung braucht Internet. Updates bewusst übernehmen, nicht während laufender Kochschritte. Browser können lokale Daten trotzdem löschen.
 
 Echte Servererkennung mit künstlichem PNG/PDF und 390-Pixel-Testbrowser sind geprüft. Eine tatsächliche Kamera-/Installation-/Offline-Abnahme auf iPhone und iPad steht noch aus; HEIC/HEIF ist noch nicht unterstützt.
 

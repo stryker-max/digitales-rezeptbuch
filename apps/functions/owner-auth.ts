@@ -2,6 +2,7 @@ import { createHash, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { postgresPool } from "../web/src/lib/postgres-store.ts";
 import { privateHost } from "../web/src/lib/private-host.ts";
+import { authBudget, authInput } from "./auth-input.ts";
 
 const derive = promisify(scrypt);
 const digest = (text: string) => createHash("sha256").update(text).digest("hex");
@@ -10,23 +11,16 @@ export function ownerSession() { return privateHost(process.env.RECIPE_SESSION_K
 export async function signInOwner(request: Request): Promise<Response> {
   const json = (error: string, status: number) => Response.json({ error }, { status });
   if (request.method !== "POST") return json("Anmeldung erforderlich.", 401);
-  if (!(request.headers.get("content-type") ?? "").startsWith("application/json")) return json("Ungültiges Anmeldeformat.", 415);
   const setup = new URL(request.url).searchParams.get("setup") === "1";
   if (setup) {
     const provided = request.headers.get("x-recipe-setup") ?? "", expected = process.env.RECIPE_SETUP_HASH ?? "";
     if (!/^[A-Za-z0-9_-]{43}$/.test(provided) || !/^[0-9a-f]{64}$/.test(expected) || !sameSecret(digest(provided), expected)) return json("Einrichtungsfreigabe fehlt oder ist ungültig.", 403);
   }
-  const chunks: Uint8Array[] = []; const reader = request.body?.getReader();
-  if (!reader) return json("Passwort fehlt.", 422);
-  let size = 0;
-  while (true) { const item = await reader.read(); if (item.done) break; size += item.value.length; if (size > 4096) { await reader.cancel(); return json("Anmeldung zu groß.", 413); } chunks.push(item.value); }
-  let password: unknown; try { password = JSON.parse(Buffer.concat(chunks).toString("utf8")).password; } catch { return json("Ungültige Anmeldung.", 422); }
-  if (typeof password !== "string" || password.length < 20 || password.length > 200) return json("Passwort benötigt 20 bis 200 Zeichen.", 422);
+  const input = await authInput(request); if (input instanceof Response) return input;
+  const password = input.password;
+  if (typeof password !== "string" || !password.length || password.length > 200) return json("Bitte einen Code oder ein Passwort eingeben.", 422);
+  const limited = await authBudget("password"); if (limited) return limited;
   const pool = await postgresPool();
-  // Shared global brute-force budget, not an ingress/DDoS filter.
-  const bucket = String(Math.floor(Date.now() / 60000));
-  const count = (await pool.query("INSERT INTO rb_login_limits(bucket,attempts) VALUES($1,1) ON CONFLICT(bucket) DO UPDATE SET attempts=rb_login_limits.attempts+1 RETURNING attempts", [bucket])).rows[0].attempts;
-  if (count > 20) return Response.json({ error: "Zu viele Anmeldeversuche. Bitte kurz warten." }, { status: 429, headers: { "Retry-After": "60" } });
   if (setup) {
     const salt = randomBytes(32).toString("hex"), hash = (await derive(password, salt, 64) as Buffer).toString("hex");
     const inserted = await pool.query("INSERT INTO rb_owner(id,salt,password_hash) VALUES(1,$1,$2) ON CONFLICT DO NOTHING", [salt, hash]);

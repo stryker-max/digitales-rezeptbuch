@@ -19,3 +19,11 @@ export const postgresSchemaV2 = `
 CREATE TABLE IF NOT EXISTS rb_owner(id INTEGER PRIMARY KEY CHECK(id=1),salt TEXT NOT NULL,password_hash TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS rb_login_limits(bucket TEXT PRIMARY KEY,attempts INTEGER NOT NULL);
 `;
+
+// Additive: existing passwords, sessions, sources and confirmed recipes stay valid.
+export const postgresSchemaV3 = `
+CREATE TABLE IF NOT EXISTS rb_auth_limits(bucket TEXT PRIMARY KEY,attempts INTEGER NOT NULL,expires BIGINT NOT NULL);
+CREATE TABLE IF NOT EXISTS rb_passkeys(id TEXT PRIMARY KEY,public_key BYTEA NOT NULL,counter BIGINT NOT NULL,transports JSONB NOT NULL,created BIGINT NOT NULL);
+CREATE TABLE IF NOT EXISTS rb_auth_challenges(id TEXT PRIMARY KEY,challenge TEXT NOT NULL,kind TEXT NOT NULL CHECK(kind IN ('register','login')),binding TEXT NOT NULL,expires BIGINT NOT NULL);
+CREATE INDEX IF NOT EXISTS rb_auth_challenges_expiry ON rb_auth_challenges(expires);
+`;

@@ -1,6 +1,7 @@
 import { waitUntil } from "@neon/functions";
 import { initializeRuntime } from "./runtime.ts";
 import { ownerSession, signInOwner } from "./owner-auth.ts";
+import { passkeyRequest } from "./passkeys.ts";
 import * as analysis from "../web/src/app/api/analysis/route.ts";
 import * as job from "../web/src/app/api/analysis/[id]/route.ts";
 import * as collection from "../web/src/app/api/collection/route.ts";
@@ -24,6 +25,7 @@ export async function apiHandler(request: Request): Promise<Response> {
     initializeRuntime();
     const session = ownerSession();
     if (path === "/api/session") return finish(await signInOwner(request));
+    if (path === "/api/passkey") return finish(await passkeyRequest(request));
     if (!session.verify(request.headers.get("x-recipe-session") ?? "")) return reply("Privates Rezeptbuch zuerst anmelden.", 401);
     // Only our verified owner reaches the existing internal route handlers.
     // External owner/forwarded headers are never trusted or forwarded.
