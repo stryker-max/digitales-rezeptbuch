@@ -327,6 +327,8 @@ export function createChatGPT(config: ChatGPTConfig): ChatGPTClient {
       } finally { changingProfile = false; }
     },
 
+    async renewSession(options = {}) { return authenticated(async () => snapshot(), options.signal); },
+
     async listModels(options = {}) { return authenticated(listModels, options.signal); },
 
     async streamResponse(options) {

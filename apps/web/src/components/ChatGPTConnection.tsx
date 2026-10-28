@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/remote-api";
 import { useEffect, useState } from "react";
 type State = { serverHosted?: boolean; session: { status: string; sharing: boolean; identity?: { name?: string; email?: string } }; connecting: boolean; signInUrl: string | null; error?: string | null };
 export function ChatGPTConnection({ onChange }: { onChange: (sharing: boolean, model: string) => void }) {
@@ -11,7 +12,7 @@ export function ChatGPTConnection({ onChange }: { onChange: (sharing: boolean, m
     let stopped = false; let timer: ReturnType<typeof setTimeout>;
     async function poll() {
       try {
-        const response = await fetch("/api/chatgpt", { cache: "no-store" }); const data = await response.json();
+        const response = await apiFetch("/api/chatgpt", { cache: "no-store" }); const data = await response.json();
         if (!response.ok) throw new Error(data.error);
         if (!stopped) { setState(data); setError(""); timer = setTimeout(poll, data.connecting ? 1500 : 5000); }
       } catch (error) { if (!stopped) { setError(error instanceof Error ? error.message : "ChatGPT-Zustand nicht verfügbar."); timer = setTimeout(poll, 5000); } }
@@ -22,7 +23,7 @@ export function ChatGPTConnection({ onChange }: { onChange: (sharing: boolean, m
   useEffect(() => {
     if (!sharing) { setModels([]); setModel(""); return; }
     let stopped = false;
-    fetch("/api/chatgpt?models=1", { cache: "no-store" }).then(async (response) => { const data = await response.json(); if (!response.ok) throw new Error(data.error); if (!stopped) {
+    apiFetch("/api/chatgpt?models=1", { cache: "no-store" }).then(async (response) => { const data = await response.json(); if (!response.ok) throw new Error(data.error); if (!stopped) {
       setModels(data.models);
       let saved = ""; try { saved = localStorage.getItem("recipe-chatgpt-model") ?? ""; } catch { /* Account default. */ }
       setModel(data.models.some((item: { slug: string }) => item.slug === saved) ? saved : data.models[0]?.slug ?? "");
@@ -31,7 +32,7 @@ export function ChatGPTConnection({ onChange }: { onChange: (sharing: boolean, m
   }, [sharing]);
   useEffect(() => { onChange(sharing, model); }, [sharing, model, onChange]);
   async function action(name: "signin" | "disconnect") {
-    try { const response = await fetch(`/api/chatgpt?action=${name}`, { method: "POST" }); const data = await response.json(); if (!response.ok) throw new Error(data.error); setRefresh((value) => value + 1); }
+    try { const response = await apiFetch(`/api/chatgpt?action=${name}`, { method: "POST" }); const data = await response.json(); if (!response.ok) throw new Error(data.error); setRefresh((value) => value + 1); }
     catch (error) { setError(error instanceof Error ? error.message : "ChatGPT-Verbindung fehlgeschlagen."); }
   }
   return <section className="muted-panel metadata"><h2>Mit deinem ChatGPT-Abo</h2><p className="small">{state?.serverHosted ? "Dein privates Online-Rezeptbuch. Dein eigener Rechner muss dafür nicht laufen." : "Lokaler persönlicher Betrieb."} Dein Abo wird erst nach deiner Freigabe genutzt. Keine separate API-Abrechnung und kein API-Schlüssel. Originalvorlagen gehen erst nach ausdrücklicher Auswahl an OpenAI.</p>

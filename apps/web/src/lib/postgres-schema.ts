@@ -14,3 +14,8 @@ CREATE TABLE IF NOT EXISTS rb_chatgpt (
  encrypted_state BYTEA, provider TEXT, updated_at TEXT NOT NULL
 );
 `;
+
+export const postgresSchemaV2 = `
+CREATE TABLE IF NOT EXISTS rb_owner(id INTEGER PRIMARY KEY CHECK(id=1),salt TEXT NOT NULL,password_hash TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS rb_login_limits(bucket TEXT PRIMARY KEY,attempts INTEGER NOT NULL);
+`;

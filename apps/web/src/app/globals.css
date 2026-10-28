@@ -193,3 +193,6 @@ body { margin:0; padding:20px; background:#0F172A; }
 .recipe-app .manual-fields .actions { margin-top:20px; }
 @media(max-width:640px){body{padding:0;}.recipe-app .app{border-radius:0;}.recipe-app .card-image{aspect-ratio:auto;height:100%;}.recipe-app .card-image .photo{height:100%;}}
 @media(max-width:640px){.recipe-app .manual-source{position:static;}.recipe-app .manual-source object{height:56vh;min-height:320px;}}
+
+.recipe-app .remote-access {padding:16px 20px;margin:0 0 16px;}
+.recipe-app .remote-access .muted-panel {margin:0;}

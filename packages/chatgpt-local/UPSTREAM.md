@@ -7,3 +7,5 @@ Originale OAuth-, Profil-, Tokenrefresh-, Sperr- und Verschlüsselungsimplementi
 Änderungen für Digitales Rezeptbuch: eigener Paketname und eigenständige Buildkonfiguration; `types.ts` und `responses.ts` erweitern den textbasierten Wrapper auf lokale Bild-/PDF-Daten und strukturierte Ausgaben. OAuth-Ziele, Berechtigungen, Identitätsprüfung und sichere Speicherung werden beibehalten. Keine API-Schlüssel-Fallbacks, keine privaten ChatGPT-Web-Endpunkte, kein Abruf fremder Anmeldedateien.
 
 Zusätzlich optionaler serverseitiger `ChatGPTProfileStore`-Adapter und exportierte unveränderte Zustandsvalidierung. Der PostgreSQL-Adapter verwendet dieselben OAuth-Abläufe, einen exklusiven prozessübergreifenden Session-Lock und unmittelbar bestätigte verschlüsselte Refresh-Checkpoints. Lokaler Dateispeicher bleibt Standard.
+
+Serverwartung ergänzt `renewSession`: bestehende Erlaubnis über den vorhandenen geprüften Refresh-Pfad erneuern, ohne Modellabfrage oder Inferenz. Kein neuer Login, keine erneute Zustimmung und kein Ignorieren eines Widerrufs.

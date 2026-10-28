@@ -109,6 +109,8 @@ export interface ChatGPTClient {
   listProfiles(): Promise<LoginProfile[]>;
   selectProfile(id: string): Promise<SessionState>;
   listModels(options?: { signal?: AbortSignal }): Promise<ChatGPTModel[]>;
+  /** Trusted host maintenance: renew existing authorization without inference. */
+  renewSession(options?: { signal?: AbortSignal }): Promise<SessionState>;
   subscribe(listener: (session: SessionState) => void): () => void;
   /** Sign out of the selected profile. Its registration and identity remain saved. */
   disconnect(): Promise<void>;

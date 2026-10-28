@@ -1,18 +1,24 @@
 # Digitales Rezeptbuch
 
-**Rezeptbuch für iPhone/iPad in Entwicklung · 27. Oktober 2026 · Weiterbau ab `1988cd5`**
+**Rezeptbuch für iPhone/iPad in Entwicklung · 28. Oktober 2026 · Weiterbau ab `1988cd5`**
 
-Next.js-/React-App für eigene Foto-/PDF-Rezepte, Originalvergleich, Kochen, Wochenplan und Einkauf. Navy-/Blau-Oberfläche mit großen Schaltflächen und festen Kochpfeilen. Lokal benutzbar und als browserlokale Webversion veröffentlicht; noch keine fertig abgenommene Cloud-Anwendung mit geräteübergreifender Sammlung.
+Next.js-/React-App für eigene Foto-/PDF-Rezepte, Originalvergleich, Kochen, Wochenplan und Einkauf. Navy-/Blau-Oberfläche mit großen Schaltflächen und festen Kochpfeilen. Lokal sowie mit privater Neon-API benutzbar. Echte Geräteabnahme und vollständige Mehrbenutzer-/Einstellungssynchronisierung sind noch offen.
 
 ## Private iPhone-/iPad-Version mit KI
 
-Das aktuelle Ziel ist **Foto auf iPhone/iPad aufnehmen → automatisch ausgefülltes Rezept → bestätigen**, ohne laufenden eigenen Rechner. Dafür ist eine geschützte Serverversion mit separatem Abo-Worker und Geräteabgleich implementiert. Auf ausdrücklichen Nutzerwunsch ist **nur kostenloser Betrieb** vorgesehen: Render Free für die App und Neon Free für dauerhafte Rezepte, unveränderte Originale, Aufträge und verschlüsselte Abo-Anmeldung. Kein Bezahltarif, Datenträger oder API-Fallback. Kostenloser Speicher ist eingerichtet; die Veröffentlichung auf Render steht noch aus. [Online-Betrieb und Abnahmestand](docs/ONLINE-BETRIEB.md).
+**[App auf iPhone/iPad öffnen](https://stryker-max.github.io/digitales-rezeptbuch/)**. Die Webseite ist mit einer privaten API und einem separaten Worker auf **Neon Free** verbunden. Die echte Foto- und PDF-Erkennung über das freigegebene ChatGPT-Abo wurde auf Neon mit künstlichen Vorlagen geprüft; Originalbytes stimmen überein. Der eigene Rechner muss für den laufenden Betrieb nicht eingeschaltet sein. Einmalige persönliche Passwort-Einrichtung über einen privaten Link; danach auf jedem Gerät mit diesem Passwort anmelden. Die erste Einrichtung durch den Eigentümer steht noch aus.
+
+**Nur kostenlose Tarife, keine Kartendaten und kein kostenpflichtiger API-Fallback.** Render wurde wegen der Kartenabfrage nicht eingerichtet. Kostenlose Kontingente können den Betrieb bei Überschreitung unterbrechen; es wird nicht automatisch hochgestuft. [Online-Betrieb, Schutz und Grenzen](docs/ONLINE-BETRIEB.md).
 
 Der Serverpfad ergänzt lokale Bestände, ersetzt sie nicht. Neue bestätigte KI-Rezepte werden auf weiteren eigenen Geräten mit geprüften Originalen ergänzt. Plan/Einkauf/Metadaten bleiben bislang gerätelokal. Noch kein Mehrbenutzersystem und keine echte iPhone-/iPad-Abnahme.
 
-## Bisher verfügbare App öffnen und Foto erkennen
+## Foto erkennen und kochen
 
-**Mit ChatGPT-Abo lokal: http://127.0.0.1:3125/**
+Online: privat anmelden → „Rezept hinzufügen“ → einmal freiwillig „Automatisch erkennen … an OpenAI senden“ einschalten → Foto aufnehmen → automatisch ausgefülltes Rezept vergleichen → „Geprüft speichern“. Kein Abtippen. Offene Lesefragen bleiben sichtbar und müssen geklärt werden. Die Abo-Freigabe ersetzt die Foto-Übertragungsfreigabe nicht.
+
+### Lokale Entwicklung (optional)
+
+http://127.0.0.1:3125/ · Die auf Neon übertragene alte Abo-Sitzung nicht parallel lokal weiterverwenden. Für lokale Anbieterentwicklung eine eigene frische Verbindung verwenden.
 
 ```powershell
 npm ci
@@ -22,7 +28,7 @@ npm run abo:start
 
 Windows, Node.js 24+. Für Entwicklung `npm run abo`. Server und Analyseworker starten gemeinsam. ChatGPT-Verbindung über „Continue with ChatGPT“ freigeben. Einmal freiwillig „Automatisch erkennen … an OpenAI senden“ einschalten, dann **Foto aufnehmen → automatisch ausgefülltes Rezept ansehen → Geprüft speichern**. Kein Abtippen oder manuelles Zuordnen. Nur bei Lesefragen oder gewünschter Korrektur etwas ergänzen. Die Übertragungsfreigabe bleibt unabhängig von der Abo-Anmeldung und ist jederzeit ausschaltbar. [Ausführliche Anleitung, Grenzen und Datenschutz](docs/CHATGPT-ABO.md).
 
-**[Öffentliche Webversion auf GitHub Pages](https://stryker-max.github.io/digitales-rezeptbuch/)**: Sammlung wiederherstellen, planen, sichern und offline kochen. Dort gibt es keinen KI-Server und keine automatische Abo-Erkennung. Der frühere manuelle Foto-/PDF-Übertragungsweg wurde auf Nutzerwunsch entfernt; vorhandene Rezepte und Sicherungen bleiben erhalten. [Webversion](docs/GITHUB-PAGES.md).
+Die GitHub-Webseite speichert Offlinekopien weiter auf dem jeweiligen Gerät. Neue bestätigte KI-Rezepte samt Originalen werden nach privater Anmeldung vom Neon-Server ergänzt. Alte lokale Daten werden weder gelöscht noch still hochgeladen. Der frühere manuelle Übertragungsweg bleibt auf Nutzerwunsch entfernt. [Webversion](docs/GITHUB-PAGES.md).
 
 **Adresse, Port und Browserprofil beibehalten.** Verschiedene Ursprünge besitzen getrennte lokale Bestände. Vor Ursprungswechsel Sammlung sichern und auf Zieladresse wiederherstellen. Browserdaten nicht löschen. Entwicklungs- und Produktionsbetrieb nicht gleichzeitig gegen denselben `.next`-Ordner ausführen. Für Offline-Nutzung Produktionsbetrieb und „Offline-Paket prüfen“ verwenden.
 
@@ -31,7 +37,7 @@ Ohne KI-Verbindung bleiben Sammlung und Kochen benutzbar: `npm run dev` oder nac
 ## Implementierter Stand
 
 - Sammlung, Titel-/Zutaten-/Tag-/Abschriftsuche, Favoriten. Automatische korrigierbare Tags mit Beleg und Regelversion; keine automatisch zugesicherten Ernährungs-/Allergenmerkmale.
-- Automatische Foto-/PDF-Übernahme über freigegebenes ChatGPT-Abo: Titel, Portionen, Zutaten, Utensilien, Schritte und Hinweise mit Quellblockherkunft. Fertiger Entwurf ohne Abtippen; Nutzer bestätigt das Ergebnis. Originalbytes und SHA-256 in IndexedDB sowie privater lokaler Auftragsdatenbank. HEIC/HEIF-Erkennung noch offen.
+- Automatische Foto-/PDF-Übernahme über freigegebenes ChatGPT-Abo: Titel, Portionen, Zutaten, Utensilien, Schritte und Hinweise mit Quellblockherkunft. Fertiger Entwurf ohne Abtippen; Nutzer bestätigt das Ergebnis. Originalbytes und SHA-256 in IndexedDB sowie privater Auftragsdatenbank (Neon online, SQLite lokal). HEIC/HEIF-Erkennung noch offen.
 - Große Kochansicht: Utensilien, Zutaten, Überblick, Schritte, Originalabschrift und fester Abschluss. Letzten Kochstand wieder aufnehmen. Rezept-IDs bezeichnen unveränderliche Fassungen; Bearbeitungs-/Versionsoberfläche noch offen.
 - Manuelle, automatische und gemischte Wochenplanung, je ein Rezept pro Tag, automatische Einkaufsliste. Ohne bekannte Portionsbasis ausdrücklich **Rezeptmengen**. Gleicher Faktor in Planung, Einkauf und Kochzutaten; Originalzeiten/-temperaturen bleiben unverändert.
 - g/kg/dag und ml/l zusammenrechnen, Brüche lesen, offene Mengen erhalten. Gekaufte Mengen bleiben bei Planänderung berücksichtigt. Freie Einkaufsposten ergänzen/abhaken. Offene Mengen bleiben „Menge prüfen“ und sind noch nicht mengenmäßig abhakbar. Verwaiste Kaufzuordnungen bleiben gespeichert, haben noch keine eigene Anzeige.
@@ -44,11 +50,11 @@ Vier vorinstallierte Rezepte und deren KI-Bilder sind ausdrücklich künstliche 
 
 ## KI und Grenzen
 
-Der empfohlene persönliche Windows-Zugang nutzt das ausdrücklich freigegebene ChatGPT-Abo. Accountmodelle werden tatsächlich geladen, Abo-Nutzung in ChatGPT verwaltet. Standard lokal 20 Anbieteraufrufe je UTC-Tag im Abo-Starter, keine automatische Wiederholung nach unklaren Fehlern. JPEG/PNG/WebP bis 20 Millionen Pixel und PDF mit 1–10 Seiten eines einzelnen vollständigen Rezepts, jeweils bis 25 MB. Bilder als Arbeitskopie ohne EXIF, PDFs vollständig an OpenAI. Unveränderte Originale bleiben privat lokal. [Abo-Anleitung](docs/CHATGPT-ABO.md).
+Der persönliche Online- und Windows-Zugang nutzt das ausdrücklich freigegebene ChatGPT-Abo. Accountmodelle werden tatsächlich geladen, Abo-Nutzung in ChatGPT verwaltet. Standard lokal 20 Anbieteraufrufe je UTC-Tag im Abo-Starter, keine automatische Wiederholung nach unklaren Fehlern. JPEG/PNG/WebP bis 20 Millionen Pixel und PDF mit 1–10 Seiten eines einzelnen vollständigen Rezepts, jeweils bis 25 MB. Bilder als Arbeitskopie ohne EXIF, PDFs vollständig an OpenAI. Unveränderte Originale bleiben im privaten Serverbestand und als lokale Offlinekopie. [Abo-Anleitung](docs/CHATGPT-ABO.md).
 
 KI bleibt fehlbar. Feldtexte und Mengen müssen in den referenzierten Blöcken vorkommen; jeder Block wird zugeordnet oder begründet ausgeschlossen. Das beweist keine vollständige oder richtige Abschrift. Offene Lesefragen blockieren „Geprüft speichern“; der Nutzer löst die Bestätigung aus. Keine frei erfundenen Nährwerte, keine zusätzlichen KI-Aufrufe beim Kochen. Keine persönlichen Rezepte für die Entwicklung übertragen; tatsächliche Anbieterprüfung mit künstlichen Foto-/PDF-Vorlagen.
 
-Der lokale Dienst ist ausschließlich an Loopback gebunden. Kein Cloudkonto/RLS, keine automatische Gerätesynchronisierung. Den unveränderten lokalen Dienst nicht per Tunnel/Proxy veröffentlichen. Der neue private Serverstarter setzt stattdessen eigene Inhaberauthentifizierung, Ursprungsschutz und verschlüsselte Serverprofile voraus. Öffentliche GitHub Pages führen keine Abo-Aufrufe aus; ferngehostete Abo-Apps benötigen einen gesondert erlaubten Zugang. Der bereits vorhandene API-Schlüssel-Modus ist optional separat konfigurierbar, wurde hier nicht kostenpflichtig getestet und wird nie als Abo-Fallback benutzt.
+Der optionale lokale Dienst bleibt ausschließlich an Loopback gebunden und darf nicht unverändert per Tunnel veröffentlicht werden. Die GitHub-Webseite ruft stattdessen die geschützte Neon-API auf; SQL- und Abo-Zugänge bleiben auf dem Server. Der alte Render-Gateway-Pfad ist als Alternative erhalten, wird hier aber nicht betrieben. Persönlicher Einzelinhaberbetrieb, keine vollständige RLS-/Mehrbenutzerlösung. Der separate API-Schlüssel-Modus bleibt eine ausdrücklich zu konfigurierende lokale Entwicklungsalternative und wird online nie als Abo-Ersatz aktiviert.
 
 ## Sichern und Gerätewechsel
 
@@ -64,6 +70,7 @@ npm run test:chatgpt
 npm run test:server
 npm run typecheck
 npm run typecheck:worker
+npm run typecheck:functions
 npm run build
 npm run test:server:integration
 npm run test:e2e
@@ -72,15 +79,15 @@ npm run build:pages
 npm run test:pages
 ```
 
-Browsertests: isolierte Chrome-Profile, Produktionsserver auf Ports 3118/3119; Chrome muss installiert sein. Der zweite Server verwendet ausschließlich synthetische Analysekonfiguration ohne Anbieteraufruf. Echte iPhones/iPads und Home-Bildschirm-Betrieb sind separat offen. [Aktueller Prüfbericht](docs/PRUEFBERICHT-ABO-2026-10-27.md). Auf diesem Windows-System braucht der Produktionsbuild normale Dateirechte. Webpack vermeidet die hier fehlgeschlagene Turbopack-Verzeichnisverknüpfung.
+Browsertests: isolierte Chrome-Profile, Produktionsserver auf Ports 3118/3119; Chrome muss installiert sein. Der zweite Server verwendet ausschließlich synthetische Analysekonfiguration ohne Anbieteraufruf. Echte iPhones/iPads und Home-Bildschirm-Betrieb sind separat offen. [Aktueller Online-Prüfstand](docs/ONLINE-BETRIEB.md#tatsächliche-prüfung); [früherer lokaler Prüfbericht](docs/PRUEFBERICHT-ABO-2026-10-27.md). Auf diesem Windows-System braucht der Produktionsbuild normale Dateirechte. Webpack vermeidet die hier fehlgeschlagene Turbopack-Verzeichnisverknüpfung.
 
 ## Nächste Schritte
 
 1. Handschrift und vielfältige autorisierte Quellen prüfen, ausgelassene Teilangaben stärker erkennen, Versionsbearbeitung und geprüfte HEIC-Aufbereitung ergänzen. Automatische Gliederung und Feldherkunft sind implementiert; Qualitätsabnahme auf echten Rezepten bleibt offen.
 2. Echten versionierten Lebensmittelkatalog samt Lizenz importieren, sichere automatische Zuordnung und belegte Faktoren ergänzen.
-3. Eigentümerkonto, private serverseitige Sammlung, RLS für Tabellen/Dateien, konfliktgeschützte Gerätesynchronisierung und unabhängige Sicherungen bauen und mit zwei Konten prüfen. Bestehende lokale Bestände erst exportieren und nach validierter Migration übernehmen.
+3. Die persönliche Passwort-Ersteinrichtung abschließen; vollständige Mehrbenutzer-/RLS-Isolation, Plan-/Einkaufssynchronisierung und unabhängige Server-Gesamtsicherung samt Wiederherstellung ergänzen. Bestehende lokale Bestände nur nach bewusstem Export und validiertem Import übertragen.
 4. Echte iPhone-/iPad-Abnahme einschließlich Kamera, Offline/Updates, Speicher, VoiceOver, Timer und Wake Lock.
-5. Danach die vollständige private Cloud mit Analyseserver und Sicherung einrichten. Die browserlokale Webversion ist bereits per HTTPS auf GitHub Pages veröffentlicht; eine produktive geräteübergreifende Rezeptdatenbank ist noch nicht eingerichtet.
+5. Hostingkontingente und Wiederanlauf unter realer Nutzung beobachten. Der kostenlose Neon-Analyseserver ist bereits eingerichtet und mit echten Abo-Aufrufen künstlicher Vorlagen geprüft.
 
 Weitere offene Zielpunkte: Wochen-/Datumsverwaltung, mehrere Mahlzeitkomponenten/Chargen, Resteverteilung, Vorratszuordnung, verwaiste Käufe, Druckansicht, Papierkorb, Kochhistorie und Konflikte zwischen gleichzeitig bearbeitenden Browserfenstern.
 

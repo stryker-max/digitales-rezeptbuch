@@ -280,3 +280,13 @@ test('pending rotations reject invalid or future receipt timestamps before persi
     assert.equal(await readFile(filename, 'utf8'), before);
   }
 });
+
+
+test('host maintenance renews the existing grant without model discovery or inference', async (t) => {
+  const {client,store}=await fixture(t);
+  const calls=mockProvider(t,{token:()=>Response.json(tokenResponse())});
+  const renewed=await client.renewSession();
+  assert.equal(renewed.sharing,true);assert.equal(calls.token,1);assert.equal(calls.models,0);
+  assert.equal((await read(store)).profiles[0].credentials.refreshToken,'successor-test-refresh');
+  await client.renewSession();assert.equal(calls.token,1);assert.equal(calls.models,0);
+});

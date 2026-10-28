@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/remote-api";
 import { useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from "react";
 import {
   ArrowLeft, ArrowLeftRight, ArrowRight, ArrowUpRight, BookOpen, CalendarDays,
@@ -17,7 +18,7 @@ import { OfflineStatus } from "./OfflineStatus";
 import { AnalysisImport, analysisJobKey, type AnalysisAccess } from "./AnalysisImport";
 import { draftFromAnalysis, type ReviewedDraft, type AnalysisDraft } from "@/lib/analysis-contract";
 import { RecipeImportReview } from "./RecipeImportReview";
-import { staticHosting } from "@/lib/deployment";
+import { analysisAvailable } from "@/lib/deployment";
 import { loadConfirmedCloudRecipes } from "@/lib/cloud-sync";
 import type { Ingredient, PlanSlot, Recipe } from "@/lib/types";
 
@@ -88,8 +89,8 @@ export function RecipeBook() {
         const items = await listLocalRecipes();
         if (stopped) return;
         setUserRecipes(items); setRecipesReady(true);
-        if (!staticHosting && !checked) {
-          try { const config = await fetch("/api/analysis", { cache: "no-store" }).then(r => r.json()); remote = config.syncEnabled === true; checked = true; if (!stopped) setCloudMode(remote); } catch { /* Offline local collection remains available. */ }
+        if (analysisAvailable && !checked) {
+          try { const config = await apiFetch("/api/analysis", { cache: "no-store" }).then(r => r.json()); remote = config.syncEnabled === true; checked = true; if (!stopped) setCloudMode(remote); } catch { /* Offline local collection remains available. */ }
         }
         if (remote) {
           const fresh = await loadConfirmedCloudRecipes(items);
@@ -180,7 +181,7 @@ export function RecipeBook() {
     setSaving(true); setFileError("");
     try {
       // Invoked only by the user's explicit “Geprüft speichern” action.
-      const response = await fetch(`/api/analysis/${analysisAccess.id}`, { method: "POST", headers: { Authorization: `Bearer ${analysisAccess.token}`, "Content-Type": "application/json" }, body: JSON.stringify({ action: "confirm", draft: { ...draft, confirmed: true }, resolutions }) });
+      const response = await apiFetch(`/api/analysis/${analysisAccess.id}`, { method: "POST", headers: { Authorization: `Bearer ${analysisAccess.token}`, "Content-Type": "application/json" }, body: JSON.stringify({ action: "confirm", draft: { ...draft, confirmed: true }, resolutions }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "Bestätigung fehlgeschlagen.");
       if (result.recipe.sourceHash !== await sha256(selectedFile.blob)) throw new Error("Original-Prüfsumme stimmt nicht mit dem Server überein.");
@@ -297,7 +298,7 @@ export function RecipeBook() {
   }
 
   function importView() {
-    return <><div className="page-head"><div><p className="eyebrow">Aus Papier wird ein Rezept</p><h1>Foto rein. Rezept fertig.</h1><p className="sub">Foto aufnehmen oder PDF auswählen. Die KI übernimmt Titel, Zutaten und Schritte für dich.</p></div></div><AnalysisImport file={analysisAccess ? null : selectedFile?.blob ?? null} onReview={(access, file, result) => { const filled = draftFromAnalysis(result); setAnalysisAccess(access); setAnalysisDraft(result); setResolutions({}); setSelectedFile({ name: file.name, type: file.type, url: URL.createObjectURL(file), blob: file }); setDraft(filled); setFileError(""); patch({ view: "recognized" }); }} />{!staticHosting && <div className="upload-zone"><Camera size={32} /><h2 className="upload-title">Deine Rezeptvorlage.</h2><p className="sub">Jeweils ein vollständiges Rezept. Bei mehreren Seiten ein gemeinsames PDF auswählen.</p><div className="actions"><label className="button primary file-label"><Camera size={19} /> Foto aufnehmen<input type="file" accept="image/*" capture="environment" onChange={selectFile} /></label><label className="button file-label"><Upload size={19} /> Datei auswählen<input type="file" accept="image/*,application/pdf" onChange={selectFile} /></label></div>{fileError && <p className="status" role="alert">{fileError}</p>}{selectedFile && <div className="selected-file"><strong>{selectedFile.name}</strong>{selectedFile.type.startsWith("image/") && !selectedFile.type.includes("heic") && !selectedFile.type.includes("heif") && <img src={selectedFile.url} alt="Vorschau der ausgewählten Datei" />}</div>}</div>}<div className="muted-panel"><strong>Eine Sicherung wiederherstellen</strong>{pendingRestore?.preferences && <div role="status"><p>Rezepte wurden ergänzt. Die Sicherung enthält auch Plan, Einkauf und Zusatzdaten. Diese können die aktuellen Einstellungen ersetzen.</p><div className="actions"><Action onClick={() => { patch(pendingRestore.preferences!); setPendingRestore(null); setNotice("Plan, Einkauf und Zusatzdaten aus der Sicherung übernommen."); }}>Gesicherte Einstellungen übernehmen</Action><Action onClick={() => setPendingRestore(null)}>Aktuelle Einstellungen behalten</Action></div></div>}<p className="small">Gesicherte Rezepte samt Originaldateien auf diesem Gerät ergänzen.</p><div className="actions preview-action"><label className="button file-label"><Upload size={18} /> Sicherungsdatei auswählen<input type="file" accept="application/json,.json" onChange={(event) => void restoreLocalRecipes(event)} /></label></div></div></>;
+    return <><div className="page-head"><div><p className="eyebrow">Aus Papier wird ein Rezept</p><h1>Foto rein. Rezept fertig.</h1><p className="sub">Foto aufnehmen oder PDF auswählen. Die KI übernimmt Titel, Zutaten und Schritte für dich.</p></div></div><AnalysisImport file={analysisAccess ? null : selectedFile?.blob ?? null} onReview={(access, file, result) => { const filled = draftFromAnalysis(result); setAnalysisAccess(access); setAnalysisDraft(result); setResolutions({}); setSelectedFile({ name: file.name, type: file.type, url: URL.createObjectURL(file), blob: file }); setDraft(filled); setFileError(""); patch({ view: "recognized" }); }} />{analysisAvailable && <div className="upload-zone"><Camera size={32} /><h2 className="upload-title">Deine Rezeptvorlage.</h2><p className="sub">Jeweils ein vollständiges Rezept. Bei mehreren Seiten ein gemeinsames PDF auswählen.</p><div className="actions"><label className="button primary file-label"><Camera size={19} /> Foto aufnehmen<input type="file" accept="image/*" capture="environment" onChange={selectFile} /></label><label className="button file-label"><Upload size={19} /> Datei auswählen<input type="file" accept="image/*,application/pdf" onChange={selectFile} /></label></div>{fileError && <p className="status" role="alert">{fileError}</p>}{selectedFile && <div className="selected-file"><strong>{selectedFile.name}</strong>{selectedFile.type.startsWith("image/") && !selectedFile.type.includes("heic") && !selectedFile.type.includes("heif") && <img src={selectedFile.url} alt="Vorschau der ausgewählten Datei" />}</div>}</div>}<div className="muted-panel"><strong>Eine Sicherung wiederherstellen</strong>{pendingRestore?.preferences && <div role="status"><p>Rezepte wurden ergänzt. Die Sicherung enthält auch Plan, Einkauf und Zusatzdaten. Diese können die aktuellen Einstellungen ersetzen.</p><div className="actions"><Action onClick={() => { patch(pendingRestore.preferences!); setPendingRestore(null); setNotice("Plan, Einkauf und Zusatzdaten aus der Sicherung übernommen."); }}>Gesicherte Einstellungen übernehmen</Action><Action onClick={() => setPendingRestore(null)}>Aktuelle Einstellungen behalten</Action></div></div>}<p className="small">Gesicherte Rezepte samt Originaldateien auf diesem Gerät ergänzen.</p><div className="actions preview-action"><label className="button file-label"><Upload size={18} /> Sicherungsdatei auswählen<input type="file" accept="application/json,.json" onChange={(event) => void restoreLocalRecipes(event)} /></label></div></div></>;
   }
 
   function recognizedView() {

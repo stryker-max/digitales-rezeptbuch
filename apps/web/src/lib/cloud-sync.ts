@@ -1,8 +1,9 @@
+import { apiFetch } from "./remote-api.ts";
 import { readArchive, sameRecipeContent } from "./local-archive.ts";
 import type { LocalRecipe } from "./local-store.ts";
 
 // Add only immutable, user-confirmed server versions. Never replace local data.
-export async function loadConfirmedCloudRecipes(local: LocalRecipe[], fetcher: typeof fetch = fetch): Promise<LocalRecipe[]> {
+export async function loadConfirmedCloudRecipes(local: LocalRecipe[], fetcher: typeof fetch = apiFetch): Promise<LocalRecipe[]> {
   const response = await fetcher("/api/collection", { cache: "no-store" });
   if (!response.ok) throw new Error("Private Sammlung nicht erreichbar. Lokale Rezepte bleiben verfügbar.");
   const data = await response.json();

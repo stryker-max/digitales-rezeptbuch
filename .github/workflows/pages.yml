@@ -23,6 +23,7 @@ jobs:
       - run: npm test
       - run: npm run test:chatgpt
       - run: npm run test:server
+      - run: npm run typecheck:functions
       - run: npm run typecheck:worker
       - run: npm run build
       - run: npm run test:server:integration

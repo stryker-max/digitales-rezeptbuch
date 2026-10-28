@@ -1,0 +1,6 @@
+{
+  "extends": "../web/tsconfig.json",
+  "compilerOptions": { "target": "ES2022", "incremental": false, "paths": { "@/*": ["../web/src/*"] } },
+  "include": ["./*.ts"],
+  "exclude": ["node_modules"]
+}

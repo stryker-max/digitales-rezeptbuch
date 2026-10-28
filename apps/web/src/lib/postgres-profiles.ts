@@ -41,7 +41,7 @@ export class PostgresProfiles implements ChatGPTProfileStore {
   private client() { const client = this.context.getStore(); if (!client) throw new ChatGPTError("storage_lock_lost", "Abo-Speicher nur unter exklusiver Sperre verwenden."); return client; }
   async getHostId() {
     const client = this.client();
-    await client.query("INSERT INTO rb_chatgpt(id,host_id,updated_at) VALUES(1,$1,$2) ON CONFLICT DO NOTHING", [randomUUID(), new Date().toISOString()]);
+    await client.query("INSERT INTO rb_chatgpt(id,host_id,updated_at) VALUES(1,$1,$2) ON CONFLICT DO NOTHING", [`urn:uuid:${randomUUID()}`, new Date().toISOString()]);
     return (await client.query("SELECT host_id FROM rb_chatgpt WHERE id=1")).rows[0].host_id as string;
   }
   async read(): Promise<StoredState | undefined> {

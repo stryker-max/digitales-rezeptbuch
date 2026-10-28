@@ -1,35 +1,23 @@
-# Webversion auf GitHub Pages
+# GitHub-Webversion
 
-Repository: https://github.com/stryker-max/digitales-rezeptbuch
+**Stand 28.10.2026.** [Digitales Rezeptbuch öffnen](https://stryker-max.github.io/digitales-rezeptbuch/).
 
-**Veröffentlichte und geprüfte App:** https://stryker-max.github.io/digitales-rezeptbuch/
+Die statische React-Webseite nutzt jetzt eine geschützte API und einen getrennten Abo-Worker auf Neon Free. GitHub selbst führt keine KI-Aufträge aus. Nach privater Anmeldung: Foto/PDF auswählen, ausdrücklich zur Übertragung freigeben und automatisch ausgefülltes Rezept prüfen und bestätigen. Eine freiwillige dauerhafte Dateifreigabe ermöglicht den Ablauf ab dem nächsten ausgewählten Foto ohne erneute Übertragungsfrage. Keine manuelle Abschrift und kein API-Bezahlzugang. Für den Eigentümer ist einmal die persönliche Passwort-Einrichtung über einen privaten Link nötig. [Betrieb und Grenzen](ONLINE-BETRIEB.md).
 
-Erste Veröffentlichung am 27. Oktober 2026 erfolgreich: [GitHub-Build und Deployment](https://github.com/stryker-max/digitales-rezeptbuch/actions/runs/40521070167), Quellstand `33760f5`. Die echte HTTPS-Adresse wurde anschließend im Browser geöffnet; das vollständige Offlinepaket wurde dort erfolgreich geprüft. App und Repository sind öffentlich; persönliche Rezeptdaten wurden nicht hochgeladen.
+Neue bestätigte KI-Rezepte samt Originalen werden auf weiteren angemeldeten Geräten nach Archiv-/Hashprüfung ergänzt. Bereits vorhandene lokale Daten bleiben erhalten; sie werden nicht still hochgeladen. Plan, Einkauf und persönliche Metadaten bleiben gerätelokal. Vollständiger Export und bewusster Wiederimport bleiben unverändert nutzbar. Regelmäßig unabhängig sichern.
 
-GitHub Pages stellt die browserlokale App über HTTPS bereit. Eigene Rezepte, Fotos und PDFs werden dort weiterhin ausschließlich im jeweiligen Browser gespeichert. Die öffentliche Website enthält App-Code und künstliche Beispiele, keine persönliche Sammlung. Auf einem zweiten Gerät gibt es einen eigenen Bestand; Sicherungsdatei bewusst übertragen und importieren. Keine automatische Cloud-Synchronisierung.
+## Build und Datenschutz
 
-Die KI-Abschrift mit lokalem SQLite-/Node-Worker ist im statischen Webbuild ausdrücklich deaktiviert. Es gibt dort keine Server-API und keinen Anbieteraufruf. Sammlung, Wiederherstellung, Kochen, Tags, importierte Nährwertdaten, Plan, Einkauf, Export/Restore und Offlinepaket bleiben dieselben React-Komponenten wie im lokalen Next.js-Betrieb.
+`apps/pages` ist der Vite-Einstieg der gemeinsam genutzten React-Oberfläche. `npm run build:pages` erzeugt `dist/pages`, den Unterpfad `/digitales-rezeptbuch`, Manifest und versionsgebundenen Service Worker. API-Metadaten stehen in `apps/pages/remote-api.json`; diese URL ist kein Zugangsschlüssel. Keine Datenbank-, Abo- oder Server-Schlüssel in Clientdateien. Das persönliche 30-Tage-Sitzungstoken wird nur nach erfolgreicher Anmeldung auf dem eigenen Gerät gespeichert und an die fest konfigurierte private API gesendet.
 
-## Technischer Veröffentlichungsweg
+`RECIPE_PAGES_API_BASE` überschreibt den Endpunkt für getrennte Tests. Ein ausdrücklich leerer Wert erzeugt weiterhin den reinen statischen Offline-Modus ohne Erkennung. `PAGES_BASE_PATH` kann den Repository-Unterpfad bewusst ändern. Der lokale Next.js-/SQLite-Pfad bleibt als Entwicklungspfad erhalten.
 
-`apps/pages` ist ein kleiner zusätzlicher Vite-Client-Einstieg; kein Umbau oder Ersatz des lokalen Next.js-Servers. `npm run build:pages` baut `dist/pages`, setzt den Unterpfad `/digitales-rezeptbuch`, erzeugt Manifest und versionsgebundenen Service Worker. Alle Assetpfade und der Worker-Scope bleiben innerhalb dieses Unterpfads. Standardhost und Next.js-API-Verarbeitung werden nicht verändert. `PAGES_BASE_PATH` kann bei anderem Repositorynamen bewusst angepasst werden.
+## Offline und iPhone/iPad
 
-Auf GitHub unter Settings → Pages die Quelle **GitHub Actions** auswählen. `.github/workflows/pages.yml` prüft, baut und veröffentlicht bei Änderungen an `main`. Private Originale, Schlüssel, SQLite-Dateien, lokale Sicherungen, `work/`, Testausgaben und Buildordner bleiben ausgeschlossen. Normale GitHub-Pages-Adressen sind öffentlich; private Sammlung bedeutet hier lokale Speicherung und keine öffentliche Rezeptdatenbank.
+In Safari öffnen, nach Wunsch zum Home-Bildschirm hinzufügen. Auf jedem Gerät mit dem persönlichen App-Passwort anmelden. „Offline-Paket prüfen“ kontrolliert App-Dateien und gespeicherte Original-Prüfsummen. Bereits gespeicherte Rezepte lassen sich danach offline kochen; neue KI-Erkennung braucht Internet. Updates bewusst übernehmen, nicht während laufender Kochschritte. Browser können lokale Daten trotzdem löschen.
 
-## Prüfungen und Bedienung
+Echte Servererkennung mit künstlichem PNG/PDF und 390-Pixel-Testbrowser sind geprüft. Eine tatsächliche Kamera-/Installation-/Offline-Abnahme auf iPhone und iPad steht noch aus; HEIC/HEIF ist noch nicht unterstützt.
 
-```powershell
-npm run build:pages
-npm run typecheck:pages
-npm run test:pages
-```
+## Prüfung
 
-Geprüft im isolierten Chrome-Browser unter echtem Unterpfad: Beispielbild, Wiederherstellung eines künstlichen Archivs mit PNG-Original, Exportbytes, Offlineprüfung, Neuladen ohne Netzwerk und eigenes Rezept kochen. Keine `/api/`-Anfragen im statischen Betrieb, keine Browserfehler, bei 390 px kein horizontaler Überlauf. Echte Safari-/iPhone-/iPad-Abnahme bleibt offen.
-
-Auf dem iPhone nach erfolgreicher Veröffentlichung in Safari öffnen, über Teilen → Zum Home-Bildschirm hinzufügen. Vor Offline-Nutzung einmal online öffnen und „Offline-Paket prüfen“ verwenden. Browserdaten regelmäßig über „Sammlung sichern“ unabhängig aufbewahren. Lokale Rezepte vom Rechner zunächst exportieren und auf der Webadresse importieren; sie wechseln nicht automatisch auf den neuen Ursprung.
-
-Quellen: [GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site), [Vite: GitHub Pages](https://vite.dev/guide/static-deploy.html#github-pages), am 27. Oktober 2026 geöffnet. Veröffentlichungserfolg anhand tatsächlicher GitHub-Deploymentdaten und erreichbarer Website geprüft.
-
-Auf Nutzerwunsch wurde der manuelle Übertragungsweg entfernt. Automatische Foto-/PDF-Erkennung über das ChatGPT-Abo steht in der lokalen Windows-App bereit; sie ist kein Bestandteil des statischen Pages-Servers. Bestehende Rezepte und v1/v2-Sicherungen bleiben nutzbar. [Abo-Anleitung](CHATGPT-ABO.md).
-
-Der geplante private Online-Server für iPhone/iPad ist ein eigener Veröffentlichungsweg. Er ist noch nicht live und wird nicht durch einen Push zu GitHub Pages aktiviert. [Vorbereitung und Kostenfreigabe](ONLINE-BETRIEB.md).
+Produktionsbuild für den Unterpfad, isolierter Pages-Browserablauf mit Archiv-Wiederherstellung und Offline-Kochen bestanden. Zusätzlich neue mobile Browserprüfung am echten Neon-Testdienst: Anmeldung, private Rezept-/Originalsynchronisierung, Kamera-Eingabe, keine voreingestellte Foto-Übertragungsfreigabe und keine Browserfehler. [Gesamter Prüfstand](ONLINE-BETRIEB.md#tatsächliche-prüfung).

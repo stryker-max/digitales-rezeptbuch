@@ -4,7 +4,8 @@
   "type": "module",
   "version": "0.1.0",
   "workspaces": [
-    "apps/*", "packages/*"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
     "postinstall": "npm run build --workspace @rezeptbuch/chatgpt-local",
@@ -20,6 +21,9 @@
     "test": "node --experimental-strip-types --test apps/web/src/lib/*.test.ts",
     "test:e2e": "playwright test",
     "test:server": "node --experimental-strip-types --test tests/server/*.test.mjs",
+    "build:functions": "node scripts/build-functions.mjs --deploy && python scripts/package-functions.py",
+    "typecheck:functions": "tsc --noEmit -p apps/functions/tsconfig.json",
+    "test:functions": "node --experimental-strip-types tests/functions/integration.mjs",
     "test:postgres": "node --experimental-strip-types tests/server/postgres-integration.mjs",
     "test:server:integration": "node --experimental-strip-types tests/server/private-integration.mjs",
     "start:private": "node --experimental-strip-types scripts/start-private-server.mjs",
@@ -34,6 +38,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",
+    "esbuild": "0.28.2",
     "vite": "8.3.5"
   }
 }

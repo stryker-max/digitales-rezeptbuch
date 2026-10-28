@@ -1,7 +1,8 @@
 "use client";
+import { apiFetch } from "@/lib/remote-api";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { validateAnalysis, type AnalysisDraft } from "@/lib/analysis-contract";
-import { staticHosting } from "@/lib/deployment";
+import { analysisAvailable, remoteApiBase } from "@/lib/deployment";
 import { ChatGPTConnection } from "./ChatGPTConnection";
 
 export type AnalysisAccess = { id: string; token: string };
@@ -27,8 +28,8 @@ export function AnalysisImport({ file, onReview }: { file: File | null; onReview
   const opening = useRef(false);
   const uploading = useRef(false);
   useEffect(() => {
-    if (staticHosting) return;
-    fetch("/api/analysis", { cache: "no-store" }).then((r) => r.json()).then((data) => { setEnabled(data.enabled === true); setAuthMode(data.authMode ?? "api"); }).catch(() => {});
+    if (!analysisAvailable) return;
+    apiFetch("/api/analysis", { cache: "no-store" }).then((r) => r.json()).then((data) => { setEnabled(data.enabled === true); setAuthMode(data.authMode ?? "api"); }).catch(() => {});
     try { const saved = JSON.parse(localStorage.getItem(key) ?? "null"); if (saved && /^[0-9a-f-]{36}$/i.test(saved.id) && /^[0-9a-f-]{36}$/i.test(saved.token)) setAccess(saved); } catch { /* No job to resume. */ }
     try { setAutomatic(localStorage.getItem(autoConsentKey) === "explicitly-enabled-v1"); } catch { /* Stay off if storage is unavailable. */ }
     setPreferencesReady(true);
@@ -40,7 +41,7 @@ export function AnalysisImport({ file, onReview }: { file: File | null; onReview
     let timer: ReturnType<typeof setTimeout>;
     async function poll() {
       try {
-        const response = await fetch(`/api/analysis/${access!.id}`, { cache: "no-store", headers: { Authorization: `Bearer ${access!.token}` } });
+        const response = await apiFetch(`/api/analysis/${access!.id}`, { cache: "no-store", headers: { Authorization: `Bearer ${access!.token}` } });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error ?? "Auftragsstatus nicht verfügbar.");
         if (stopped) return;
@@ -64,7 +65,7 @@ export function AnalysisImport({ file, onReview }: { file: File | null; onReview
       const form = new FormData();
       form.set("id", next.id); form.set("token", next.token); form.set("file", file); form.set("consent", "true"); form.set("oneRecipe", "true");
       if (authMode === "chatgpt") form.set("model", subscription.model);
-      const response = await fetch("/api/analysis", { method: "POST", body: form });
+      const response = await apiFetch("/api/analysis", { method: "POST", body: form });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Upload fehlgeschlagen.");
       setAccess(next); setJob({ state: "queued", name: file.name, mime: file.type, result: null, model: "" });
@@ -77,7 +78,7 @@ export function AnalysisImport({ file, onReview }: { file: File | null; onReview
     setBusy(true);
     try {
       const result = validateAnalysis(job.result, 10);
-      const response = await fetch(`/api/analysis/${access.id}?source=1`, { headers: { Authorization: `Bearer ${access.token}` }, cache: "no-store" });
+      const response = await apiFetch(`/api/analysis/${access.id}?source=1`, { headers: { Authorization: `Bearer ${access.token}` }, cache: "no-store" });
       if (!response.ok) throw new Error("Gesichertes Original nicht verfügbar.");
       const source = new File([await response.blob()], job.name, { type: job.mime });
       sessionStorage.setItem("recipe-import-opened", access.id);
@@ -88,7 +89,7 @@ export function AnalysisImport({ file, onReview }: { file: File | null; onReview
   async function cancel() {
     if (!access) return;
     try {
-      const response = await fetch(`/api/analysis/${access.id}`, { method: "POST", headers: { Authorization: `Bearer ${access.token}`, "Content-Type": "application/json" }, body: JSON.stringify({ action: "cancel" }) });
+      const response = await apiFetch(`/api/analysis/${access.id}`, { method: "POST", headers: { Authorization: `Bearer ${access.token}`, "Content-Type": "application/json" }, body: JSON.stringify({ action: "cancel" }) });
       if (!response.ok) throw new Error("Abbruch konnte nicht bestätigt werden.");
       setJob((current) => current ? { ...current, state: "cancelled" } : null);
     } catch (error) { setError(error instanceof Error ? error.message : "Abbruch fehlgeschlagen."); }
@@ -112,8 +113,8 @@ export function AnalysisImport({ file, onReview }: { file: File | null; onReview
     // Reusing this photo requires an explicit click, not an automatic second call.
     submitted.current = file;
   }
-  if (staticHosting) return <section className="muted-panel"><h2>Foto automatisch erkennen</h2><p>Die Foto-Erkennung mit deinem ChatGPT-Abo läuft in der lokalen App auf deinem Rechner. Öffne dort das Rezeptbuch. Auf GitHub Pages kannst du deine gesicherte Sammlung wiederherstellen und offline kochen.</p><p className="small">Hier ist kein Analyseserver verbunden. Ausgewählte Fotos werden hier nicht übertragen.</p></section>;
-  return <>{authMode === "chatgpt" && <ChatGPTConnection onChange={updateSubscription} />}<section className="muted-panel metadata"><h2>Foto rein. Rezept fertig.</h2><p>{enabled ? "Titel, Zutaten und Schritte werden automatisch übernommen. Das Original bleibt unverändert. Danach siehst du das fertige Rezept zum Vergleich und Speichern." : "Die automatische Erkennung ist hier nicht gestartet. Öffne die lokale App mit deinem ChatGPT-Abo."}</p>
+  if (!analysisAvailable) return <section className="muted-panel"><h2>Foto automatisch erkennen</h2><p>Die Foto-Erkennung mit deinem ChatGPT-Abo läuft in der lokalen App auf deinem Rechner. Öffne dort das Rezeptbuch. Auf GitHub Pages kannst du deine gesicherte Sammlung wiederherstellen und offline kochen.</p><p className="small">Hier ist kein Analyseserver verbunden. Ausgewählte Fotos werden hier nicht übertragen.</p></section>;
+  return <>{authMode === "chatgpt" && <ChatGPTConnection onChange={updateSubscription} />}<section className="muted-panel metadata"><h2>Foto rein. Rezept fertig.</h2><p>{enabled ? "Titel, Zutaten und Schritte werden automatisch übernommen. Das Original bleibt unverändert. Danach siehst du das fertige Rezept zum Vergleich und Speichern." : remoteApiBase ? "Melde dich oben bei deinem privaten Rezeptbuch an. Danach kannst du Fotos automatisch erkennen lassen." : "Die automatische Erkennung ist hier nicht gestartet. Öffne die lokale App mit deinem ChatGPT-Abo."}</p>
     {enabled && <><label className="confirm-row"><input type="checkbox" checked={automatic} onChange={(event) => { const checked = event.target.checked; setAutomatic(checked); try { if (checked) localStorage.setItem(autoConsentKey, "explicitly-enabled-v1"); else localStorage.removeItem(autoConsentKey); } catch { /* Choice applies only in this window. */ } }} /><span>Automatisch erkennen: Von mir ausgewählte Rezeptfotos/PDFs an OpenAI senden. Ich wähle jeweils genau ein vollständiges Rezept aus.</span></label><p className="small">Freiwillig und jederzeit hier ausschaltbar. Gilt nur für hier ausgewählte Dateien, nicht für deine gespeicherte Sammlung. Die Erkennung nutzt deinen gewählten Zugang. Einen laufenden Auftrag bei Bedarf unten abbrechen.</p>
       {!automatic && <><label className="confirm-row"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /> Diese ausgewählte Datei zur Erkennung an OpenAI senden.</label><label className="confirm-row"><input type="checkbox" checked={oneRecipe} onChange={(event) => setOneRecipe(event.target.checked)} /> Die Datei enthält genau ein vollständiges Rezept, alle Seiten in richtiger Reihenfolge.</label></>}
       <button className="button primary" disabled={!file || !ready || (!automatic && (!consent || !oneRecipe)) || active || busy} onClick={() => void start()}>{busy ? "Wird verarbeitet …" : "Foto automatisch erkennen"}</button></>}

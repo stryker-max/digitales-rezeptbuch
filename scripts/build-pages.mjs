@@ -5,11 +5,14 @@ import { resolve, relative } from "node:path";
 const root = resolve(import.meta.dirname, "..");
 const basePath = process.env.PAGES_BASE_PATH ?? "/digitales-rezeptbuch";
 if (!/^\/[a-zA-Z0-9_-]+$/.test(basePath) && basePath !== "") throw new Error("Ungültiger Pages-Unterpfad.");
+const publicBackend = JSON.parse(await readFile(resolve(root, "apps/pages/remote-api.json"), "utf8"));
+const remoteApiBase = process.env.RECIPE_PAGES_API_BASE ?? publicBackend.apiBase;
+if (remoteApiBase && !/^https:\/\/br-[a-z0-9-]+\.compute\.[a-z0-9.-]+\.neon\.tech$/.test(remoteApiBase)) throw new Error("Ungültiger privater API-Ursprung.");
 const outDir = resolve(root, "dist/pages");
 await build({
   root: resolve(root, "apps/pages"), base: `${basePath}/`, publicDir: resolve(root, "apps/web/public"),
   resolve: { alias: { "@": resolve(root, "apps/web/src") } },
-  define: { "process.env.NODE_ENV": JSON.stringify("production"), "process.env.NEXT_PUBLIC_BASE_PATH": JSON.stringify(basePath), "process.env.NEXT_PUBLIC_STATIC_HOSTING": JSON.stringify("true") },
+  define: { "process.env.NODE_ENV": JSON.stringify("production"), "process.env.NEXT_PUBLIC_BASE_PATH": JSON.stringify(basePath), "process.env.NEXT_PUBLIC_STATIC_HOSTING": JSON.stringify("true"), "process.env.NEXT_PUBLIC_RECIPE_API_BASE": JSON.stringify(remoteApiBase) },
   build: { outDir, emptyOutDir: true },
 });
 const manifest = { name: "Digitales Rezeptbuch", short_name: "Digitales Rezeptbuch", description: "Deine Rezepte. Einfach gut kochen.", start_url: "./", scope: "./", display: "standalone", background_color: "#0F172A", theme_color: "#0F172A", lang: "de", icons: [192, 512].map((size) => ({ src: `./icon-${size}.png`, sizes: `${size}x${size}`, type: "image/png" })) };

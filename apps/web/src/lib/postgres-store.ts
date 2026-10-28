@@ -2,7 +2,7 @@ import pg, { type Pool, type PoolClient } from "pg";
 import { createHash } from "node:crypto";
 import { tokenHash, reviewedRecipe, type Job } from "./analysis-server.ts";
 import { validateAnalysis, promptVersion } from "./analysis-contract.ts";
-import { postgresSchemaV1 } from "./postgres-schema.ts";
+import { postgresSchemaV1, postgresSchemaV2 } from "./postgres-schema.ts";
 import type { ConfirmedSource, JobInput, JobRepository } from "./job-repository.ts";
 
 export function postgresConfig(connectionString: string) {
@@ -28,6 +28,9 @@ export async function postgresPool(): Promise<Pool> {
         if (!(await client.query("SELECT version FROM rb_schema_migrations WHERE version=1")).rowCount) {
           await client.query(postgresSchemaV1);
           await client.query("INSERT INTO rb_schema_migrations(version) VALUES(1)");
+        }
+        if (!(await client.query("SELECT version FROM rb_schema_migrations WHERE version=2")).rowCount) {
+          await client.query(postgresSchemaV2); await client.query("INSERT INTO rb_schema_migrations(version) VALUES(2)");
         }
         await client.query("COMMIT"); return pool;
       } catch { await client.query("ROLLBACK").catch(() => {}); throw new Error("Private Datenbank konnte nicht eingerichtet werden."); }
