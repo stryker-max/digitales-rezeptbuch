@@ -2,7 +2,7 @@ import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { isAbsolute, resolve } from "node:path";
 import { createHash } from "node:crypto";
-import { validateAnalysis, validateReview, promptVersion } from "./analysis-contract.ts";
+import { validateAnalysis, validateReview, promptVersion, keepUnclearResolution } from "./analysis-contract.ts";
 import { parseQuantity } from "./plan.ts";
 import { privateServerRequest } from "./private-host.ts";
 
@@ -84,13 +84,16 @@ export function reviewedRecipe(job: Job, draft: unknown, resolutions: unknown) {
   const steps = d.steps.split("\n").filter((line) => line.trim());
   const equipment = d.equipment.split("\n").filter((line) => line.trim());
   const sourceNotes = (d.notes ?? "").split("\n").filter((line) => line.trim());
-  if (lines.length > 100 || steps.length > 200 || equipment.length > 50 || !lines.length || !steps.length) throw new Error("Zu viele oder fehlende Rezeptzeilen.");
+  if (lines.length > 100 || steps.length > 200 || equipment.length > 50 || (!lines.length && !steps.length)) throw new Error("Zu viele oder fehlende Rezeptzeilen.");
   const ingredients = lines.map((line, index) => {
     const fields = line.split("|").map((part) => part.trim());
     if (fields.length !== 3 || !fields[2] || fields[0].length > 60 || fields[1].length > 40 || fields[2].length > 200) throw new Error("Zutaten als Menge | Einheit | Zutat angeben.");
-    return { id: `ingredient-${index + 1}`, name: fields[2], amountText: [fields[0], fields[1]].filter(Boolean).join(" ") || "Menge nicht angegeben", quantity: parseQuantity(fields[0]), unit: fields[1] || null, group: "Weitere Zutaten" };
+    return { id: `ingredient-${index + 1}`, name: fields[2], amountText: [fields[0] === "?" ? "" : fields[0], fields[1]].filter(Boolean).join(" ") || "Menge nicht angegeben", quantity: parseQuantity(fields[0]), unit: fields[1] || null, group: "Weitere Zutaten" };
   });
   if (steps.some((step) => step.length > 10000) || equipment.some((item) => item.length > 200) || sourceNotes.length > 100 || sourceNotes.some((note) => note.length > 4000)) throw new Error("Rezeptzeile zu lang.");
+  if (!lines.length) sourceNotes.push("In der Vorlage ist keine Zutatenliste angegeben.");
+  if (!steps.length) sourceNotes.push("In der Vorlage ist keine Zubereitung angegeben.");
+  for (const issue of analysis.issues) if (review.resolutions[issue.id] === keepUnclearResolution) sourceNotes.push(`Ungeklärte Originalangabe: ${issue.message}`);
   const recipe = {
     id: job.id, title: d.title.trim(), description: "Automatisch übernommen und vom Nutzer geprüft.",
     tags: [], estimatedMinutes: null, servings: d.servings ? Number(d.servings) : null, demo: false,

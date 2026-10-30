@@ -191,6 +191,20 @@ body { margin:0; padding:20px; background:#0F172A; }
 .recipe-app .manual-fields .confirm-row { display:flex; align-items:flex-start; gap:12px; margin:22px 0; font-weight:600; }
 .recipe-app .manual-fields .confirm-row input { width:24px; height:24px; flex-shrink:0; accent-color:#8BB5FF; }
 .recipe-app .manual-fields .actions { margin-top:20px; }
+.recipe-app .import-review {padding-bottom:160px;}
+.recipe-app .review-finish {position:fixed;z-index:20;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,1280px);box-sizing:border-box;padding:12px 20px max(12px,env(safe-area-inset-bottom));background:#13243b;border-top:1px solid #527197;box-shadow:0 -8px 24px #0f172a55;}
+.recipe-app .review-finish p {margin:0 0 8px;}
+.recipe-app .review-finish .actions {display:flex;flex-wrap:nowrap;gap:10px;}
+.recipe-app .review-finish .primary {flex:1;}
+.recipe-app .review-question {margin-bottom:20px;}
+.recipe-app .scan-progress {margin:20px 0;}
+.recipe-app .scan-progress-track {height:10px;overflow:hidden;border-radius:8px;background:#345174;}
+.recipe-app .scan-progress-track span {display:block;width:40%;height:100%;border-radius:8px;background:#8bb5ff;animation:recipe-scan 1.7s ease-in-out infinite alternate;}
+.recipe-app .scan-stages {display:flex;justify-content:space-between;gap:12px;padding:0;list-style:none;font-size:12px;color:#c7dbfa;}
+.recipe-app .scan-connection {padding:12px 18px;}
+.recipe-app .scan-connection h2 {font-size:16px;}
+@keyframes recipe-scan {from{transform:translateX(-20%)}to{transform:translateX(170%)}}
+@media(prefers-reduced-motion:reduce){.recipe-app .scan-progress-track span{animation:none;width:100%;opacity:.65;}}
 @media(max-width:640px){body{padding:0;}.recipe-app .app{border-radius:0;}.recipe-app .card-image{aspect-ratio:auto;height:100%;}.recipe-app .card-image .photo{height:100%;}}
 @media(max-width:640px){.recipe-app .manual-source{position:static;}.recipe-app .manual-source object{height:56vh;min-height:320px;}}
 

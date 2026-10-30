@@ -5,7 +5,8 @@ import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { openJobs, claimJob, publishResult } from "../../apps/web/src/lib/analysis-server.ts";
 
-test("automatically recognized recipe, plan, purchases and metadata survive offline reload and complete restore", async ({ page, context, browser }) => {
+test("automatically recognized recipe, plan, purchases and metadata survive offline reload and complete restore", async ({ page, context, browser }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   const errors: string[] = []; page.on("pageerror", (error) => errors.push(error.message));
   const original = await sharp({ create: { width: 300, height: 300, channels: 3, background: "white" } }).png().toBuffer();
   const base = "http://127.0.0.1:3119";
@@ -17,13 +18,15 @@ test("automatically recognized recipe, plan, purchases and metadata survive offl
   let uploads = 0;
   page.on("request", (request) => { if (request.method() === "POST" && request.url() === `${base}/api/analysis`) uploads++; });
   await page.locator('input[type=file][accept="image/*,application/pdf"]').setInputFiles({ name: "synthetische-testvorlage.png", mimeType: "image/png", buffer: original });
-  await expect(page.getByRole("button", { name: "Foto automatisch erkennen", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Foto automatisch erkennen", exact: true })).toBeEnabled();
   expect(uploads).toBe(0);
+  await expect(page.getByRole("checkbox")).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Selbst übertragen" })).toHaveCount(0);
   const uploaded = page.waitForResponse((response) => response.request().method() === "POST" && response.url() === `${base}/api/analysis`);
   // This deliberate opt-in grants future selected-file transmission. No Abo grant
   // or selecting a file alone sends anything. No provider worker runs in this test.
   await automatic.check(); expect((await uploaded).status()).toBe(202);
+  await expect(page.getByRole("progressbar")).toBeVisible();
   const db = openJobs(resolve(process.env.RECIPE_E2E_DIR!, "analysis.sqlite"));
   try {
     const job = claimJob(db, 100)!;
@@ -35,7 +38,9 @@ test("automatically recognized recipe, plan, purchases and metadata survive offl
   await expect(page.getByRole("heading", { name: "Dein Rezept ist bereit.", exact: true })).toBeVisible();
   await expect(page.getByText("500 g", { exact: true })).toBeVisible();
   await expect(page.locator(".manual-fields h2")).toHaveText("Synthetische Karottensuppe");
-  await page.getByRole("button", { name: "Geprüft speichern", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Fertig – Rezept speichern", exact: true })).toBeInViewport();
+  await page.screenshot({ path: testInfo.outputPath("synthetic-scan-ready-390.png") });
+  await page.getByRole("button", { name: "Fertig – Rezept speichern", exact: true }).click();
   expect(uploads).toBe(1);
   await expect(page.getByRole("heading", { name: "Synthetische Karottensuppe", exact: true })).toBeVisible();
   await page.getByLabel("Tags bearbeiten").fill("Gemüse, Eigener Test");
@@ -119,7 +124,7 @@ test("automatic transmission choice persists, can be revoked and new files super
   await expect(automatic).toBeChecked(); await automatic.uncheck();
   const png = await sharp({ create: { width: 100, height: 100, channels: 3, background: "white" } }).png().toBuffer();
   await page.locator('input[type=file][accept="image/*,application/pdf"]').setInputFiles({ name: "synthetisch-erster-versuch.png", mimeType: "image/png", buffer: png });
-  await expect(page.getByRole("button", { name: "Foto automatisch erkennen", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Foto automatisch erkennen", exact: true })).toBeEnabled();
   const uploaded = page.waitForResponse((response) => response.request().method() === "POST" && response.url() === `${base}/api/analysis`);
   await automatic.check(); const id = (await (await uploaded).json()).id;
   // No worker/provider call. Mark this synthetic upload terminal to exercise retry UX.
@@ -155,12 +160,61 @@ test("synthetic persistent analysis job requires user resolution and server conf
   await page.evaluate(({ id, token }) => localStorage.setItem("digitales-rezeptbuch-analysis-job-v1", JSON.stringify({ id, token })), { id, token });
   await page.getByRole("button", { name: "Rezept hinzufügen", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Dein Rezept ist bereit.", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Geprüft speichern", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Fertig – Rezept speichern", exact: true })).toBeDisabled();
   await page.getByLabel("Klärung: 1 oder 7 Äpfel?", { exact: true }).fill("Im synthetischen Original 1 Apfel geprüft.");
-  await page.getByRole("button", { name: "Geprüft speichern", exact: true }).click();
+  await page.getByRole("button", { name: "Fertig – Rezept speichern", exact: true }).click();
   await expect(page.getByRole("heading", { name: draft.title, exact: true })).toBeVisible();
   const status = await request.get(`${base}/api/analysis/${id}`, { headers: { Authorization: `Bearer ${token}` } });
   expect((await status.json()).state).toBe("confirmed");
   const savedSource = await request.get(`${base}/api/analysis/${id}?source=1`, { headers: { Authorization: `Bearer ${token}` } });
   expect(Buffer.from(await savedSource.body())).toEqual(png);
+});
+
+
+test("mobile scan has one start, honest progress, one question at a time and a visible finish without quantities", async ({ page, request }, testInfo) => {
+  const base = "http://127.0.0.1:3119";
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(base);
+  await page.getByRole("button", { name: "Rezept hinzufügen", exact: true }).click();
+  const png = await sharp({ create: { width: 160, height: 160, channels: 3, background: "white" } }).png().toBuffer();
+  await page.locator('input[type=file][accept="image/*,application/pdf"]').setInputFiles({ name: "SYNTHETISCH-ohne-mengen.png", mimeType: "image/png", buffer: png });
+  await expect(page.getByRole("checkbox")).toHaveCount(1);
+  await expect(page.getByRole("checkbox")).not.toBeChecked();
+  const uploaded = page.waitForResponse((response) => response.request().method() === "POST" && response.url() === `${base}/api/analysis`);
+  await page.getByRole("button", { name: "Foto automatisch erkennen", exact: true }).click();
+  expect((await uploaded).status()).toBe(202);
+  await expect(page.getByRole("progressbar")).toBeVisible();
+  expect(await page.getByRole("progressbar").getAttribute("aria-valuenow")).toBeNull();
+  const db = openJobs(resolve(process.env.RECIPE_E2E_DIR!, "analysis.sqlite"));
+  try {
+    const job = claimJob(db, 100)!;
+    publishResult(db, job, { status: "recipe", blocks: [{ id: "b1", page: 1, text: "SYNTHETISCH ohne Mengen. Apfel. Apfel schneiden." }],
+      issues: [...[1, 2, 3].map((i) => ({ id: `q${i}`, message: `Synthetische Lesefrage ${i}?`, blockIds: ["b1"], kind: "unclear" as const })), { id: "absent", message: "Portionszahl fehlt.", blockIds: ["b1"], kind: "missing" }],
+      recipe: { title: "SYNTHETISCH ohne Mengen", titleBlockIds: ["b1"], servings: null, servingsRaw: null, servingsBlockIds: [], ingredients: [{ amount: null, unit: null, name: "Apfel", blockIds: ["b1"] }], equipment: [], steps: [{ text: "Apfel schneiden.", blockIds: ["b1"] }], notes: [], excludedBlocks: [] } });
+  } finally { db.close(); }
+  await expect(page.getByRole("heading", { name: "Dein Rezept ist bereit.", exact: true })).toBeVisible();
+  const finish = page.getByRole("button", { name: "Fertig – Rezept speichern", exact: true });
+  await expect(finish).toBeInViewport();
+  await expect(finish).toBeDisabled();
+  await expect(page.locator('input[aria-label^="Klärung:"]:visible')).toHaveCount(1);
+  for (let i = 1; i <= 3; i++) {
+    await expect(page.getByRole("heading", { name: `Synthetische Lesefrage ${i}?`, exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Unklar lassen", exact: true }).click();
+  }
+  await expect(finish).toBeEnabled();
+  for (const width of [320, 390, 768]) {
+    await page.setViewportSize({ width, height: 844 });
+    await expect(finish).toBeInViewport();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: testInfo.outputPath("synthetic-scan-finish-390.png") });
+  const confirmation = page.waitForResponse((response) => response.request().method() === "POST" && /\/api\/analysis\//.test(response.url()));
+  await finish.click();
+  const confirmed = await (await confirmation).json();
+  expect(confirmed.recipe.ingredients[0].quantity).toBeNull();
+  expect(confirmed.recipe.ingredients[0].amountText).toBe("Menge nicht angegeben");
+  expect(confirmed.recipe.sourceNotes).toHaveLength(3);
+  expect(confirmed.recipe.analysis.resolutions.absent).toContain("nicht angegeben");
+  await expect(page.getByRole("heading", { name: "SYNTHETISCH ohne Mengen", exact: true })).toBeVisible();
 });

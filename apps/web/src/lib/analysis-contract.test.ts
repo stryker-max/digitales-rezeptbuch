@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { draftFromAnalysis, validateAnalysis, type AnalysisDraft } from "./analysis-contract.ts";
+import { draftFromAnalysis, validateAnalysis, validateReview, type AnalysisDraft } from "./analysis-contract.ts";
 
 export const synthetic: AnalysisDraft = {
   status: "recipe", issues: [],
@@ -35,4 +35,40 @@ test("structured extraction rejects invented fields, missing blocks and misleadi
 test("legacy OCR stays readable but cannot become an empty manual form", () => {
   const legacy = { ...synthetic, recipe: undefined }; validateAnalysis(legacy, 1);
   assert.throws(() => draftFromAnalysis(legacy), /ältere Entwurf/);
+});
+
+test("absent quantities stay absent and missing details do not require invented answers", () => {
+  const source = structuredClone(synthetic);
+  source.blocks[1].text = "Apfel";
+  source.recipe!.ingredients[0] = { amount: null, unit: null, name: "Apfel", blockIds: ["apple"] };
+  source.issues = [{ id: "missing", message: "Keine Backofentemperatur angegeben.", blockIds: ["step"], kind: "missing" }];
+  validateAnalysis(source, 1);
+  const draft = { ...draftFromAnalysis(source), confirmed: true };
+  assert.match(draft.ingredients, /^\? \|  \| Apfel/);
+  const result = validateReview(draft, source, {});
+  assert.match(result.resolutions.missing, /nicht angegeben/);
+  assert.equal(result.draft.ingredients, draft.ingredients);
+  source.issues.push({ id: "unclear", message: "1 oder 7?", blockIds: ["apple"], kind: "unclear" });
+  assert.throws(() => validateReview(draft, source, {}), /Offene Lesefragen/);
+  delete source.issues[1].kind; // Old drafts must remain blocking rather than silently classified.
+  assert.throws(() => validateReview(draft, source, {}), /Offene Lesefragen/);
+});
+
+test("unreadable source text cannot be downgraded to an absent optional value", () => {
+  const source = structuredClone(synthetic);
+  source.blocks[1].text += " [unleserlich]";
+  source.issues = [{ id: "wrong", message: "Menge fehlt", blockIds: ["apple"], kind: "missing" }];
+  assert.throws(() => validateAnalysis(source, 1), /Unleserliche Angaben/);
+});
+
+test("a source without directions stays incomplete instead of inventing steps", () => {
+  const source = structuredClone(synthetic);
+  source.blocks = source.blocks.filter((block) => !["step", "note"].includes(block.id));
+  source.recipe!.steps = []; source.recipe!.equipment = []; source.recipe!.notes = [];
+  source.issues = [{ id: "directions", message: "Keine Zubereitung in der Vorlage.", blockIds: [], kind: "missing" }];
+  validateAnalysis(source, 1);
+  const draft = { ...draftFromAnalysis(source), confirmed: true };
+  assert.equal(validateReview(draft, source, {}).draft.steps, "");
+  source.recipe!.ingredients = [];
+  assert.throws(() => validateAnalysis(source, 1), /Kein Rezeptinhalt/);
 });

@@ -79,3 +79,14 @@ Ausdrückliche Nutzerentscheidung: eigene Konten für Inhaber und Freundin, geme
 Gemeinsamer Plan-/Einkaufsstand mit PostgreSQL-Version und begrenzter Historie, atomarem Dreiwege-Abgleich unter Datenbanksperre und expliziten Konflikten. Persistente lokale Warteschlange, Änderungen während laufender Requests berücksichtigt, Offlineänderungen nach Neuladen wieder aufgenommen. Persönliche Einstellungen getrennt; Import-/Exportformat bleibt v2. [Details und Prüfstand](ONLINE-BETRIEB.md#eigene-konten-und-gemeinsamer-haushalt--30102026).
 
 Mobile Anmeldung als eigene 420px-Karte ohne darunterliegende Sammlung; Root-Container mit border-box, 16px-Eingaben gegen iOS-Formularzoom, flexible Schaltflächen und Sicherheitsabstände. Offline-/Update-Infrastruktur bleibt erhalten, technische Knöpfe entfernt. Updates automatisch nur außerhalb von Kochschritten, offenen Dateien, Kontoeinstellungen und laufenden Eingaben. Die Designentscheidung ersetzt die vorherige manuelle Offline-Prüfung in der Produktoberfläche.
+
+
+## Scan-Ablauf vom 30.10.2026
+
+Nutzerentscheidung: Foto → Erkennung → Rezept → sichtbarer Abschluss; fehlende Mengen sind kein Pflichtfeld. Ein beschrifteter Startknopf ersetzt zwei zusätzliche Datei-Checkboxen; das getrennte freiwillige Opt-in für zukünftige ausgewählte Dateien bleibt standardmäßig aus. Der Fortschrittsbalken ist während Upload/Warten/Lesen ausdrücklich unbestimmt: Es gibt keine erfundene Prozentzahl oder Restzeit. Nach dem persistenten Job öffnet sich der Entwurf automatisch. Das Original ist aufklappbar; „Fertig – Rezept speichern“ bleibt unten sichtbar, einschließlich iOS-Sicherheitsabstand.
+
+Prompt `recipe-import-2026-10-30.3` unterscheidet optionale `missing`-Hinweise und `unclear`-Lesefragen. Fehlende Mengen/Einheiten/Portionen erzeugen keine Frage. Validatoren lesen alte Entwürfe ohne `kind` weiterhin; alte Fragen bleiben klärungsbedürftig. Unleserliche Quellblöcke dürfen nicht als bloß fehlend eingestuft werden. `missing` bleibt beim ausdrücklichen Speichern dokumentiert offen. `unclear` wird einzeln beantwortet oder vom Nutzer ausdrücklich offen übernommen; Letzteres bleibt zusätzlich dauerhaft unter den Rezepthinweisen sichtbar. Serverbestätigung, Quellblöcke, Originalbytes und unveränderliche Fassungen bleiben erhalten. Keine Datenmigration/Bestandsüberschreibung. Neue optionale Felder überleben Sicherung v2 und Wiederimport.
+
+Die Originalextraktion lädt weiterhin keine Internetquellen. Eine getrennte Recherche mit Quellen und optionalen Mengenvorschlägen ist offen; keine erfundenen Quellen oder stillen Ergänzungen.
+
+UX-Vorbilder, am 30.10.2026 gelesen: [Paprika iOS](https://www.paprikaapp.com/help/ios/#addingandeditingrecipes) (klarer Speichern-Abschluss) und [Samsung Food Fotoimport](https://samsungfood.com/add-from-photo-howto/) (Foto in bearbeitbaren Entwurf). Keine Behauptung gleicher Funktionen oder tatsächlicher iOS-Geräteabnahme.

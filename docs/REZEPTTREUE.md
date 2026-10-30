@@ -96,3 +96,8 @@ Zusatzmetadaten wie automatische Tags benötigen keine neue Bestätigung des unv
 Jeder Prompt- oder Modellwechsel wird gegen denselben freigegebenen Testbestand geprüft. Bereits bestätigte Rezepte werden nicht automatisch neu analysiert. Eine vom Nutzer angeforderte neue Analyse liefert einen getrennten Entwurf mit Vergleich zur bisherigen Version.
 
 Fehlerberichte müssen eine einzelne Feldherkunft, einen Originalblock und einen Transformationsschritt nachvollziehbar machen. Reale Rezepte dürfen nur mit Einwilligung Teil eines Entwicklungs-Testbestands werden und bleiben außerhalb von Git.
+
+
+## Nutzerentscheidung zum Scan am 30.10.2026
+
+Eine in der Vorlage nicht vorhandene Menge bleibt unbekannt und darf den Abschluss nicht blockieren. Die Scan-Oberfläche zeigt echte Lesefragen einzeln. Der Nutzer darf eine unklare Stelle bewusst offen übernehmen; diese Entscheidung bleibt in der Analyseherkunft und als sichtbarer dauerhafter Rezepthinweis erhalten. Fehlend und unleserlich werden getrennt behandelt. Bestätigung erfolgt weiterhin ausdrücklich mit „Fertig – Rezept speichern“ und wird serverseitig geprüft. Recherchevorschläge dürfen künftig nur als getrennte, freiwillige Ergänzungen mit belegten Quellen erscheinen; derzeit werden keine Internetergänzungen erzeugt.

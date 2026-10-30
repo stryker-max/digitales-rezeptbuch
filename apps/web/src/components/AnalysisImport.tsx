@@ -15,8 +15,6 @@ export function AnalysisImport({ file, onReview }: { file: File | null; onReview
   const [authMode, setAuthMode] = useState("api");
   const [subscription, setSubscription] = useState({ sharing: false, model: "" });
   const updateSubscription = useCallback((sharing: boolean, model: string) => setSubscription({ sharing, model }), []);
-  const [consent, setConsent] = useState(false);
-  const [oneRecipe, setOneRecipe] = useState(false);
   const [access, setAccess] = useState<AnalysisAccess | null>(null);
   const [job, setJob] = useState<JobView | null>(null);
   const [busy, setBusy] = useState(false);
@@ -27,6 +25,8 @@ export function AnalysisImport({ file, onReview }: { file: File | null; onReview
   const submitted = useRef<File | null>(null);
   const opening = useRef(false);
   const uploading = useRef(false);
+  const progress = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (busy) progress.current?.scrollIntoView({ block: "center", behavior: "smooth" }); }, [busy]);
   useEffect(() => {
     if (!analysisAvailable) return;
     apiFetch("/api/analysis", { cache: "no-store" }).then((r) => r.json()).then((data) => { setEnabled(data.enabled === true); setAuthMode(data.authMode ?? "api"); }).catch(() => {});
@@ -34,7 +34,6 @@ export function AnalysisImport({ file, onReview }: { file: File | null; onReview
     try { setAutomatic(localStorage.getItem(autoConsentKey) === "explicitly-enabled-v1"); } catch { /* Stay off if storage is unavailable. */ }
     setPreferencesReady(true);
   }, []);
-  useEffect(() => { setConsent(false); setOneRecipe(false); }, [file]);
   useEffect(() => {
     if (!access || !enabled) return;
     let stopped = false;
@@ -55,7 +54,7 @@ export function AnalysisImport({ file, onReview }: { file: File | null; onReview
     return () => { stopped = true; clearTimeout(timer); };
   }, [access, enabled]);
   async function start() {
-    if (!file || (!automatic && (!consent || !oneRecipe)) || busy || uploading.current || active || !ready) return;
+    if (!file || busy || uploading.current || active || !ready) return;
     uploading.current = true;
     submitted.current = file;
     setBusy(true); setError("");
@@ -114,10 +113,11 @@ export function AnalysisImport({ file, onReview }: { file: File | null; onReview
     submitted.current = file;
   }
   if (!analysisAvailable) return <section className="muted-panel"><h2>Foto automatisch erkennen</h2><p>Die Foto-Erkennung mit deinem ChatGPT-Abo läuft in der lokalen App auf deinem Rechner. Öffne dort das Rezeptbuch. Auf GitHub Pages kannst du deine gesicherte Sammlung wiederherstellen und offline kochen.</p><p className="small">Hier ist kein Analyseserver verbunden. Ausgewählte Fotos werden hier nicht übertragen.</p></section>;
-  return <>{authMode === "chatgpt" && <ChatGPTConnection onChange={updateSubscription} />}<section className="muted-panel metadata"><h2>Foto rein. Rezept fertig.</h2><p>{enabled ? "Titel, Zutaten und Schritte werden automatisch übernommen. Das Original bleibt unverändert. Danach siehst du das fertige Rezept zum Vergleich und Speichern." : remoteApiBase ? "Melde dich oben bei deinem privaten Rezeptbuch an. Danach kannst du Fotos automatisch erkennen lassen." : "Die automatische Erkennung ist hier nicht gestartet. Öffne die lokale App mit deinem ChatGPT-Abo."}</p>
-    {enabled && <><label className="confirm-row"><input type="checkbox" checked={automatic} onChange={(event) => { const checked = event.target.checked; setAutomatic(checked); try { if (checked) localStorage.setItem(autoConsentKey, "explicitly-enabled-v1"); else localStorage.removeItem(autoConsentKey); } catch { /* Choice applies only in this window. */ } }} /><span>Automatisch erkennen: Von mir ausgewählte Rezeptfotos/PDFs an OpenAI senden. Ich wähle jeweils genau ein vollständiges Rezept aus.</span></label><p className="small">Freiwillig und jederzeit hier ausschaltbar. Gilt nur für hier ausgewählte Dateien, nicht für deine gespeicherte Sammlung. Die Erkennung nutzt deinen gewählten Zugang. Einen laufenden Auftrag bei Bedarf unten abbrechen.</p>
-      {!automatic && <><label className="confirm-row"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /> Diese ausgewählte Datei zur Erkennung an OpenAI senden.</label><label className="confirm-row"><input type="checkbox" checked={oneRecipe} onChange={(event) => setOneRecipe(event.target.checked)} /> Die Datei enthält genau ein vollständiges Rezept, alle Seiten in richtiger Reihenfolge.</label></>}
-      <button className="button primary" disabled={!file || !ready || (!automatic && (!consent || !oneRecipe)) || active || busy} onClick={() => void start()}>{busy ? "Wird verarbeitet …" : "Foto automatisch erkennen"}</button></>}
+  return <>{authMode === "chatgpt" && <ChatGPTConnection onChange={updateSubscription} />}<section className="muted-panel metadata"><h2>{active || busy ? "Dein Rezept wird erkannt" : file ? "Bereit zum Erkennen" : "Foto auswählen"}</h2><p>{enabled ? "Ein Rezept pro Foto oder PDF. Auch Rezepte ohne Mengenangaben sind möglich." : remoteApiBase ? "Melde dich bei deinem Rezeptbuch an, um Fotos zu erkennen." : "Die automatische Erkennung ist hier nicht gestartet."}</p>
+    {enabled && <><label className="confirm-row"><input type="checkbox" checked={automatic} onChange={(event) => { const checked = event.target.checked; setAutomatic(checked); try { if (checked) localStorage.setItem(autoConsentKey, "explicitly-enabled-v1"); else localStorage.removeItem(autoConsentKey); } catch { /* Choice applies only in this window. */ } }} /><span>Automatisch erkennen: Künftig ausgewählte Fotos/PDFs direkt an OpenAI senden.</span></label><p className="small">Einmal einschalten, danach genügt das Foto. Jederzeit hier ausschaltbar.</p>
+      {!automatic && <p className="small">Mit „Foto automatisch erkennen“ sendest du die ausgewählte Vorlage an OpenAI. Wähle ein Rezept; bei PDFs alle zugehörigen Seiten in der richtigen Reihenfolge.</p>}
+      {!active && !busy && <button className="button primary" disabled={!file || !ready} onClick={() => { void start(); }}>Foto automatisch erkennen</button>}</>}
+    {(busy || active) && <div ref={progress} className="scan-progress" role="status" aria-live="polite"><div role="progressbar" aria-label={busy ? "Foto wird vorbereitet" : job?.state === "queued" ? "Warten auf Erkennung" : "Rezept wird gelesen"} className="scan-progress-track"><span /></div><ol className="scan-stages"><li>{active ? "✓ Foto gesichert" : "Foto vorbereiten"}</li><li>{job?.state === "processing" ? "Rezept wird gelesen …" : "Erkennung"}</li><li>Rezept ansehen</li></ol><p className="small">{job?.state === "queued" ? "Dein Foto ist angekommen. Die Erkennung startet gleich." : "Zutaten und Zubereitung werden übernommen. Du musst hier nichts ausfüllen."}</p></div>}
     {job && <div role="status"><p>{({ queued: "Foto gesichert · Erkennung startet gleich", processing: "Dein Rezept wird gelesen und gegliedert …", needs_review: "Dein Rezept ist bereit", failed: "Erkennung fehlgeschlagen", cancelled: "Erkennung abgebrochen", confirmed: "Bereits bestätigt · bei Bedarf erneut auf diesem Gerät speichern" } as Record<string, string>)[job.state] ?? job.state}</p>{job.error && <p>{job.error}</p>}{job.result && job.result.status !== "recipe" && <p>{({ not_recipe: "Kein Rezept erkannt. Bitte eine Rezeptvorlage auswählen.", unreadable: "Vorlage nicht ausreichend lesbar. Bitte ein schärferes Foto aufnehmen.", needs_source_selection: "Rezeptgrenzen unklar. Bitte genau ein vollständiges Rezept auswählen." } as Record<string, string>)[job.result.status]}</p>}{job.result?.status === "recipe" && !job.result.recipe && <p>Dieser ältere Entwurf enthält nur eine Abschrift. Bitte das Original erneut auswählen und automatisch erkennen lassen.</p>}{job.result?.recipe && ["needs_review", "confirmed"].includes(job.state) && <button className="button primary" disabled={busy} onClick={() => void review()}>Fertiges Rezept ansehen</button>}{active ? <button className="button" onClick={() => void cancel()}>Auftrag abbrechen</button> : <button className="button" onClick={newImport}>Nächstes Rezept</button>}<p className="small">Nach dem Upload läuft die Erkennung unabhängig von diesem Browser im Hintergrund weiter. Bei Fehlern kein automatischer erneuter Anbieteraufruf.</p></div>}
     {error && <p role="alert">{error}</p>}
   </section></>;

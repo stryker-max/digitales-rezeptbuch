@@ -28,7 +28,7 @@ function decodeBase64(value: string): Uint8Array {
 const shortText = (value: unknown, max: number): value is string => typeof value === "string" && value.length <= max;
 
 export function validateRecipeContent(entry: Record<string, unknown>): void {
-  if (entry.sourceNotes !== undefined && (!Array.isArray(entry.sourceNotes) || entry.sourceNotes.length > 100 || !entry.sourceNotes.every((note: unknown) => shortText(note, 4000)))) throw new Error("Ungültige Originalhinweise.");
+  if (entry.sourceNotes !== undefined && (!Array.isArray(entry.sourceNotes) || entry.sourceNotes.length > 202 || !entry.sourceNotes.every((note: unknown) => shortText(note, 4000)))) throw new Error("Ungültige Originalhinweise.");
   if (!shortText(entry.description, 1000) || !shortText(entry.sourceText, 1_000_000)
     || !shortText(entry.createdAt, 40) || !Number.isFinite(Date.parse(entry.createdAt))
     || !Array.isArray(entry.tags) || entry.tags.length > 20 || !entry.tags.every((tag: unknown) => shortText(tag, 50))
