@@ -45,10 +45,9 @@ try {
   });
   const cdp=await context.newCDPSession(page); await cdp.send('WebAuthn.enable');
   const {authenticatorId}=await cdp.send('WebAuthn.addVirtualAuthenticator',{options:{protocol:'ctap2',transport:'internal',hasResidentKey:true,hasUserVerification:true,isUserVerified:true,automaticPresenceSimulation:true}});
-  await page.goto(base+'#setup='+configuration.setup);
+  await page.goto(base);
   const password=page.getByLabel('Dein Code oder Passwort',{exact:true}); await password.waitFor();
   assert.equal(await password.getAttribute('minlength'),null);
-  await page.getByText('Zum Beispiel ein 6-stelliger Code. Keine Mindestlänge oder Zeichenregeln.').waitFor();
   // Existing fake owner: use the ordinary login screen, not a new owner setup.
   await page.goto(base+'?synthetic-passkey-check=1');
   await page.getByLabel('Dein Code oder Passwort',{exact:true}).fill('654321');

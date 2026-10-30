@@ -12,9 +12,9 @@ export async function authInput(request: Request, limit = 4096): Promise<Record<
 
 // Shared across server instances. Sustained limits also protect short owner codes.
 // Passkeys have a separate budget, so a password lock does not lock out Face ID.
-export async function authBudget(kind: "password" | "passkey"): Promise<Response | undefined> {
+export async function authBudget(kind: "password" | "setup" | "passkey"): Promise<Response | undefined> {
   const pool = await postgresPool(), client = await pool.connect(), now = Date.now();
-  const windows = kind === "password" ? [[60000, 5], [3600000, 20], [86400000, 100]] : [[60000, 30], [86400000, 1000]];
+  const windows = kind !== "passkey" ? [[60000, 5], [3600000, 20], [86400000, 100]] : [[60000, 30], [86400000, 1000]];
   try {
     await client.query("BEGIN");
     await client.query("DELETE FROM rb_auth_limits WHERE expires < $1", [now]);

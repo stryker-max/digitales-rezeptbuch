@@ -10,6 +10,8 @@ Next.js-/React-App für eigene Foto-/PDF-Rezepte, Originalvergleich, Kochen, Woc
 
 **Nur kostenlose Tarife, keine Kartendaten und kein kostenpflichtiger API-Fallback.** Render wurde wegen der Kartenabfrage nicht eingerichtet. Kostenlose Kontingente können den Betrieb bei Überschreitung unterbrechen; es wird nicht automatisch hochgestuft. [Online-Betrieb, Schutz und Grenzen](docs/ONLINE-BETRIEB.md).
 
+**Einrichtungskorrektur vom 30.10.2026:** Ohne angelegten Zugang erklärt der normale App-Link jetzt zuerst die Einrichtung. Den ersten Code ausschließlich über den persönlichen Einrichtungslink festlegen. Diese Freigabe überlebt Neuladen und App-Updates im selben Browser-Tab; nach erfolgreicher Einrichtung wird sie entfernt. Auf der privaten Einrichtungsseite kann „Am iPhone / iPad einrichten“ einen QR-Code bzw. kopierbaren Link für das eigene Gerät anzeigen. Danach funktioniert der normale App-Link mit dem gewählten Code oder Passkey. Keine öffentliche Registrierung und kein Zurücksetzen bestehender Zugänge.
+
 Der Serverpfad ergänzt lokale Bestände, ersetzt sie nicht. Neue bestätigte KI-Rezepte werden auf weiteren eigenen Geräten mit geprüften Originalen ergänzt. Plan/Einkauf/Metadaten bleiben bislang gerätelokal. Noch kein Mehrbenutzersystem und keine echte iPhone-/iPad-Abnahme.
 
 ## Foto erkennen und kochen

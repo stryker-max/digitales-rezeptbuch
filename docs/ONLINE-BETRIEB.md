@@ -1,6 +1,6 @@
 # Private Online-Version: GitHub Pages und Neon Free
 
-**Stand 28.10.2026.** Backend und verschlüsselte Abo-Verbindung sind auf Neon Free eingerichtet. Echte PNG-/PDF-Erkennung mit künstlichen Rezeptquellen bestanden; beide Originale kamen bytegleich zurück. Die GitHub-Webseite verwendet diese private API. Die einmalige Passwort-Festlegung durch den Eigentümer ist noch nötig. Echte iPhone-/iPad-Kamera-/PWA-Abnahme steht aus.
+**Stand 30.10.2026.** Backend und verschlüsselte Abo-Verbindung sind auf Neon Free eingerichtet. Echte PNG-/PDF-Erkennung mit künstlichen Rezeptquellen bestanden; beide Originale kamen bytegleich zurück. Die GitHub-Webseite verwendet diese private API. Die einmalige Passwort-Festlegung durch den Eigentümer ist noch nötig. Echte iPhone-/iPad-Kamera-/PWA-Abnahme steht aus.
 
 ## Kosten und Ablauf
 
@@ -45,7 +45,7 @@ Neue bestätigte KI-Rezepte werden auf weiteren angemeldeten Geräten ergänzt, 
 
 ## Tatsächliche Prüfung
 
-- 30 Bibliothekstests, drei Gateway-/Verschlüsselungstests, SDK 59 bestanden / eine Windows-Prüfung übersprungen.
+- 32 Bibliothekstests, drei Gateway-/Verschlüsselungstests, SDK 59 bestanden / eine Windows-Prüfung übersprungen.
 - Web-, Pages-, Functions- und Worker-Typprüfungen; Next-Produktionsbuild, Funktionspakete und Pages-Build bestanden. Acht bisherige Produktions-Browserabläufe und der statische Pages-Ablauf bestanden.
 - Vollständiger Functions-Router mit isoliertem PostgreSQL und explizit simuliertem Anbieter: doppelte Einreichung, genau eine Verarbeitung bei Konkurrenz, serverseitige unveränderliche Bestätigung, privater Geräteabruf und Archiv mit bytegleichem Original. Keine echten Anbieteraufrufe in diesem synthetischen Integrationstest.
 - Tatsächliches Neon-Hosting: Passwort-Ersteinrichtung mit künstlichem Zugang, falsches Passwort abgewiesen, anonyme/fremde/gefälschte Anfragen abgewiesen, CORS, WASM-Bilddekodierung und separater Worker geprüft. Gefälschte Trigger-Header werden vom Neon-Eingang entfernt. Tatsächlicher Zeitplanstart im Serverprotokoll nachgewiesen.
@@ -57,3 +57,13 @@ Neue bestätigte KI-Rezepte werden auf weiteren angemeldeten Geräten ergänzt, 
 Noch erforderlich: persönliche Passwort-Festlegung, echte Kamera-/PWA-/Offline-Abnahme auf iPhone und iPad, Last-/Kontingentbeobachtung, Wiederherstellung kompletter Serverbestände und gemeinsame Plan-/Einkaufsdaten.
 
 Quellen: [Neon Free und Functions](https://neon.com/docs/introduction/plans#functions), [Functions-Laufzeit](https://neon.com/docs/compute/functions/reference/runtime-limits), [Trigger](https://neon.com/docs/compute/functions/triggers/overview), [OpenAI: selbst gehostete Anwendungen](https://developers.openai.com/siwc/token-sharing-open-source/self-hosted-vms), [Abo-Aufrufe](https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference), [sharp WASM](https://sharp.pixelplumbing.com/install/#webassembly).
+
+## Einrichtungskorrektur · 30.10.2026
+
+Ein noch nicht angelegter Zugang wurde am normalen App-Link bisher wie ein falsches Passwort abgewiesen. Die persönliche Einrichtungsfreigabe lag nur im React-Zustand und ging nach Neuladen verloren, nachdem der private URL-Teil entfernt war. Jetzt erklärt die öffentliche Startseite den noch offenen ersten Schritt und zeigt davor kein Anmeldeformular. GET /api/session meldet ausschließlich den Einrichtungsstatus; eine neue Registrierung braucht weiterhin die private Freigabe. Sie wird in sessionStorage desselben Tabs aufbewahrt und nach erfolgreicher Einrichtung, ungültiger Freigabe oder erkanntem vorhandenem Eigentümer entfernt. Kein Passwort in diesem Speicher. Bereits angelegte Zugänge werden niemals ersetzt.
+
+Die private Einrichtungsseite bietet einen ausschließlich lokal erzeugten QR-Code und kopierbaren Einrichtungslink für das eigene iPhone/iPad. Keine externe QR-Webseite, kein Link in öffentlichen Dateien oder Protokollen. Diesen privaten Code nicht veröffentlichen. Zum Übertragen zuerst „Am iPhone / iPad einrichten“ wählen, mit der iPhone-Kamera scannen, auf dem iPhone den eigenen Code selbst festlegen und dort danach Face ID einrichten. Die Einrichtung ist nur einmal möglich.
+
+Eine verloren gegangene erfolgreiche Serverantwort lässt sich mit identischem Code wiederholen, ohne den Eigentümer zu verändern. Ein anderer Code unter derselben verbrauchten Freigabe wird abgewiesen. Einrichtungsversuche mit gültiger Privatfreigabe haben ein eigenes Budget; vorherige normale Anmeldeversuche blockieren den ersten eigenen Zugang nicht. Falscher Code, fehlende und ungültige Einrichtung haben unterscheidbare deutsche Meldungen.
+
+Geprüft: 32 Bibliothekstests; isolierter synthetischer Erstzugang mit realem PostgreSQL und 390-Pixel-Chrome, Neuladen, privater QR-Anzeige, zweitem Gerät, sechs Ziffern, verlorenem Erfolgs-Response und Wiederholung, Schutz vorhandener Zugänge, Entfernung der Tab-Freigabe und unveränderter Rezeptzahl. Passkey- und Import-/Archiv-Integration erneut bestanden. Kein echter iPhone-Test und keine neue Anbieterübertragung für diese Reparatur.
