@@ -1,7 +1,9 @@
 import { waitUntil } from "@neon/functions";
 import { initializeRuntime } from "./runtime.ts";
-import { ownerSession, signInOwner } from "./owner-auth.ts";
+import { signInOwner } from "./owner-auth.ts";
 import { passkeyRequest } from "./passkeys.ts";
+import { accountRequest, memberFor } from "./accounts.ts";
+import { householdRequest } from "./household.ts";
 import * as analysis from "../web/src/app/api/analysis/route.ts";
 import * as job from "../web/src/app/api/analysis/[id]/route.ts";
 import * as collection from "../web/src/app/api/collection/route.ts";
@@ -23,10 +25,13 @@ export async function apiHandler(request: Request): Promise<Response> {
   if (request.method === "POST" && request.headers.get("origin") !== origin) return reply("Ursprung erforderlich.", 403);
   try {
     initializeRuntime();
-    const session = ownerSession();
     if (path === "/api/session") return finish(await signInOwner(request));
     if (path === "/api/passkey") return finish(await passkeyRequest(request));
-    if (!session.verify(request.headers.get("x-recipe-session") ?? "")) return reply("Privates Rezeptbuch zuerst anmelden.", 401);
+    if (path === "/api/account") return finish(await accountRequest(request));
+    const member = await memberFor(request);
+    if (!member) return reply("Bitte zuerst anmelden.", 401);
+    if (path === "/api/household") return finish(await householdRequest(request));
+    if (path === "/api/chatgpt" && request.method === "POST" && member.role !== "owner") return reply("Die KI-Verbindung verwaltet der Inhaber des Haushalts.", 403);
     // Only our verified owner reaches the existing internal route handlers.
     // External owner/forwarded headers are never trusted or forwarded.
     const url = new URL(request.url), internal = new URL("http://127.0.0.1:3135"); internal.pathname = path; internal.search = url.search;
@@ -35,7 +40,12 @@ export async function apiHandler(request: Request): Promise<Response> {
     const incoming = new Request(internal, { method: request.method, headers, ...(request.body ? { body: request.body, duplex: "half" } : {}) } as RequestInit);
     let response: Response;
     if (path === "/api/analysis") response = request.method === "GET" ? await analysis.GET(incoming) : await analysis.POST(incoming);
-    else if (path === "/api/chatgpt") response = request.method === "GET" ? await chatgpt.GET(incoming) : await chatgpt.POST(incoming);
+    else if (path === "/api/chatgpt") {
+      response = request.method === "GET" ? await chatgpt.GET(incoming) : await chatgpt.POST(incoming);
+      if (request.method === "GET" && member.role === "member" && !url.searchParams.has("models") && response.ok) {
+        const data = await response.json(); response = Response.json({ serverHosted: true, session: { status: data.session?.status, sharing: data.session?.sharing === true }, connecting: false, signInUrl: null });
+      }
+    }
     else if (path === "/api/collection" && request.method === "GET") response = await collection.GET(incoming);
     else if (/^\/api\/analysis\/[0-9a-f-]{36}$/i.test(path)) { const context = { params: Promise.resolve({ id: path.split("/").pop()! }) }; response = request.method === "GET" ? await job.GET(incoming, context) : await job.POST(incoming, context); }
     else if (/^\/api\/collection\/[0-9a-f-]{36}$/i.test(path) && request.method === "GET") response = await archive.GET(incoming, { params: Promise.resolve({ id: path.split("/").pop()! }) });

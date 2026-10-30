@@ -8,7 +8,7 @@ const derive = promisify(scrypt);
 const digest = (text: string) => createHash("sha256").update(text).digest("hex");
 export const sameSecret = (a: string, b: string) => timingSafeEqual(Buffer.from(digest(a)), Buffer.from(digest(b)));
 export function ownerSession() { return privateHost(process.env.RECIPE_SESSION_KEY ?? "", process.env.RECIPE_APP_ORIGIN ?? ""); }
-function setupAllowed(provided: string) {
+export function setupAllowed(provided: string) {
   const expected = process.env.RECIPE_SETUP_HASH ?? "";
   return /^[A-Za-z0-9_-]{43}$/.test(provided) && /^[0-9a-f]{64}$/.test(expected) && sameSecret(digest(provided), expected);
 }
@@ -18,7 +18,8 @@ export async function signInOwner(request: Request): Promise<Response> {
     const pool = await postgresPool();
     const configured = Boolean((await pool.query("SELECT id FROM rb_owner WHERE id=1")).rowCount);
     const provided = request.headers.get("x-recipe-setup");
-    return Response.json({ configured, ...(provided ? { setupValid: setupAllowed(provided) } : {}) });
+    const accountsReady = Boolean((await pool.query("SELECT id FROM rb_accounts WHERE role='owner'")).rowCount);
+    return Response.json({ configured, accountsReady, ...(provided ? { setupValid: setupAllowed(provided) } : {}) });
   }
   if (request.method !== "POST") return json("Anmeldung erforderlich.", 401);
   const setup = new URL(request.url).searchParams.get("setup") === "1";
@@ -29,6 +30,7 @@ export async function signInOwner(request: Request): Promise<Response> {
   const password = input.password;
   if (typeof password !== "string" || !password.length || password.length > 200) return json("Bitte einen Code oder ein Passwort eingeben.", 422);
   const pool = await postgresPool();
+  if ((await pool.query("SELECT id FROM rb_accounts WHERE role='owner'")).rowCount) return json("Bitte mit E-Mail und Passwort oder Face ID anmelden.", 409, "USE_ACCOUNT");
   const existing = !setup ? (await pool.query("SELECT salt,password_hash FROM rb_owner WHERE id=1")).rows[0] : undefined;
   if (!setup && !existing) return json("Dein Zugang ist noch nicht eingerichtet. Öffne zuerst deinen persönlichen Einrichtungslink und lege dort deinen Code fest.", 409, "SETUP_REQUIRED");
   const limited = await authBudget(setup ? "setup" : "password"); if (limited) return limited;

@@ -10,7 +10,7 @@ test("automatically recognized recipe, plan, purchases and metadata survive offl
   const original = await sharp({ create: { width: 300, height: 300, channels: 3, background: "white" } }).png().toBuffer();
   const base = "http://127.0.0.1:3119";
   await page.goto(base);
-  await page.getByRole("button", { name: "Offline-Paket prüfen", exact: true }).waitFor();
+  await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
   await page.getByRole("button", { name: "Rezept hinzufügen", exact: true }).click();
   const automatic = page.getByRole("checkbox", { name: /^Automatisch erkennen:/ });
   await expect(automatic).not.toBeChecked();
@@ -54,8 +54,7 @@ test("automatically recognized recipe, plan, purchases and metadata survive offl
   await expect(carrot.getByRole("checkbox")).not.toBeChecked();
   await expect(page.getByText("Synthetische Zusatzposition", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Rezepte", exact: true }).click();
-  await page.getByRole("button", { name: "Offline-Paket prüfen", exact: true }).click();
-  await expect(page.getByText(/Offline geprüft: App und 1 eigene Rezepte/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Offline-Paket prüfen", exact: true })).toHaveCount(0);
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Sammlung sichern", exact: true }).click();
   const download = await downloadPromise;

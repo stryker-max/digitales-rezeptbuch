@@ -89,3 +89,9 @@ Am 26. Oktober 2026 im Browser geprüft: Sammlung, Suche nach „tomaten“, Aus
 Bei 1024 und 390 px Browserbreite wurden sämtliche acht Kochansichten durchlaufen. Die gemessenen Rechtecke beider Pfeile und die Gesamthöhe waren jeweils in allen acht Ansichten identisch. [Messdaten](../design/navigation-pruefung.json). Bei 320 px Browserbreite wurden die schmale Navigation und der Wechsel zur Beispielvorlage und zurück zusätzlich geprüft: kein horizontaler Überlauf, identische Pfeilpositionen. Keine JavaScript-Fehler im Browserprotokoll.
 
 Dies sind Prüfungen der Vorschau. Echte iPhone-/iPad-Geräte, VoiceOver, 200 % Schriftvergrößerung, Kamera, KI-Übernahme, dauerhafte Speicherung und installierter PWA-Betrieb bleiben Teil der späteren App-Abnahme.
+
+## Nutzungsentscheidung · 30.10.2026
+
+Der Nutzer wünscht eine normale, am SmartOptimiert-Einstieg orientierte Anmeldung und die gemeinsame Nutzung mit seiner Freundin. Umsetzung: eigenständige mobile Login-Karte mit E-Mail/Passwort, optionalem Face ID und privaten Haushaltseinladungen. Keine Anmeldung als großes technisches Panel über der Sammlung. Eigene Personen, gemeinsame Sammlung/Plan/Einkauf. Root-Container berücksichtigen Innenabstände in der Bildschirmbreite; Eingaben mindestens 16 px, flexible Schaltflächen, iOS-Sicherheitsabstände. Bei 320/360/375/390/430/768 px im Browser geprüft.
+
+„Offline-Paket prüfen“ und „Update laden“ sind aus dem normalen Produktfluss entfernt. App-Dateien und Updates werden im Hintergrund behandelt; laufende Eingaben und Kochschritte nicht unterbrechen. Ein kurzer verständlicher Hinweis erscheint nur ohne Internet. Diese ausdrückliche Entscheidung ersetzt die frühere sichtbare technische Bedienung.

@@ -196,3 +196,59 @@ body { margin:0; padding:20px; background:#0F172A; }
 
 .recipe-app .remote-access {padding:16px 20px;margin:0 0 16px;}
 .recipe-app .remote-access .muted-panel {margin:0;}
+
+/* Mobile shell and a compact sign-in screen, matching the actual device width. */
+html,body,#root {min-width:0;width:100%;box-sizing:border-box;}
+.recipe-app {width:100%;min-width:0;}
+.recipe-app .app {width:100%;min-width:0;}
+.recipe-app .button {max-width:100%;min-width:0;white-space:normal;text-align:center;}
+.recipe-app input,.recipe-app select,.recipe-app textarea {min-width:0;max-width:100%;font-size:16px!important;}
+.recipe-app .topbar>* {min-width:0;}
+.recipe-app .day-recipe>div,.recipe-app .recipe-copy,.recipe-app .shop-row>span {min-width:0;overflow-wrap:anywhere;}
+.recipe-app .ingredients strong {white-space:normal;text-align:right;}
+.recipe-app.auth-page {min-height:100svh;display:grid;place-items:center;padding:max(24px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));}
+.recipe-app .auth-card {max-width:420px;padding:32px 28px;background:#17253A;border:1px solid #2A3F5A;border-radius:24px;box-shadow:0 20px 70px #050B1640;}
+.recipe-app .auth-brand {display:flex;align-items:center;gap:12px;margin-bottom:32px;font-weight:700;font-size:17px;line-height:1.3;}
+.recipe-app .auth-brand .brand-mark {flex-shrink:0;}
+.recipe-app .auth-card h1 {font-size:28px;line-height:1.2;letter-spacing:-.6px;}
+.recipe-app .auth-subtitle {margin:10px 0 26px;color:#9FB3CB;}
+.recipe-app .auth-form {display:grid;gap:18px;}
+.recipe-app .auth-form label {display:grid;gap:8px;font-size:14px;font-weight:600;}
+.recipe-app .auth-form input {display:block;width:100%;height:54px;padding:12px 14px;background:#0F1C30;color:#E6EFF9;border:1px solid #496383;border-radius:12px;}
+.recipe-app .password-field {position:relative;display:block;}
+.recipe-app .password-field input {padding-right:56px;}
+.recipe-app .password-toggle {position:absolute;right:3px;top:3px;display:grid;place-items:center;width:48px;height:48px;background:transparent;color:#ABC1DC;border-radius:10px;}
+.recipe-app .auth-submit {width:100%;}
+.recipe-app .auth-divider {display:flex;align-items:center;gap:12px;color:#9FB3CB;margin:20px 0;font-size:13px;}
+.recipe-app .auth-divider:before,.recipe-app .auth-divider:after {content:'';height:1px;flex:1;background:#31435E;}
+.recipe-app .auth-links {display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-top:18px;}
+.recipe-app .auth-links button,.recipe-app .auth-offline {font-size:13px;min-height:48px;padding:10px 0;white-space:normal;}
+.recipe-app .auth-offline {width:100%;margin-top:16px;color:#9FB3CB;}
+.recipe-app .auth-error,.recipe-app .auth-notice {padding:12px 14px;border-radius:12px;margin-top:18px;font-size:14px;overflow-wrap:anywhere;}
+.recipe-app .auth-error {background:#402232;color:#FFD2DA;border:1px solid #744052;}
+.recipe-app .auth-notice {background:#1B3A48;color:#C0E4DD;}
+.recipe-app .auth-transfer {margin-top:16px;}
+.recipe-app .account-bar {display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 18px;color:#AFC4DF;font:13px/1.4 'Manrope',system-ui,sans-serif;}
+.recipe-app .account-bar>span {min-width:0;overflow-wrap:anywhere;}
+.recipe-app .account-bar button {display:flex;align-items:center;gap:8px;min-height:48px;flex-shrink:0;background:transparent;color:#AFC4DF;}
+.recipe-app .account-settings {padding:24px;margin-bottom:16px;}
+.recipe-app .member-row {display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 0;border-bottom:1px solid #31435E;}
+.recipe-app .member-row>span {min-width:0;overflow-wrap:anywhere;}
+.recipe-app .member-row small {display:block;color:#9FB3CB;}
+.recipe-app .account-settings .actions {margin-top:20px;}
+.recipe-app .invite-share {display:grid;justify-items:center;gap:14px;margin-top:20px;padding:16px;background:#132031;border-radius:16px;text-align:center;}
+.recipe-app .invite-share svg {max-width:100%;height:auto;border-radius:8px;}
+.recipe-app .sync-note {font-size:13px;color:#B8CCE6;margin-bottom:16px;}
+.recipe-app .household-conflict {margin:0 0 24px;}
+.recipe-app .household-conflict .actions {margin-top:16px;}
+@media(max-width:640px){
+ body {padding:0;}
+ .recipe-app>.app {border-left:0;border-right:0;border-radius:0;}
+ .recipe-app .auth-card {border-radius:22px;}
+ .recipe-app .topbar {padding-top:max(16px,env(safe-area-inset-top));}
+ .recipe-app .account-bar {padding:4px 16px;}
+ .recipe-app .account-settings {padding:20px 16px;}
+ .recipe-app main {padding:22px 16px max(24px,env(safe-area-inset-bottom));}
+}
+@media(max-width:360px){.recipe-app .auth-card{padding:26px 20px;}.recipe-app .account-bar{gap:6px;font-size:12px;}}
+.recipe-app {box-sizing:border-box;}

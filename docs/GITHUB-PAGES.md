@@ -1,10 +1,10 @@
 # GitHub-Webversion
 
-**Stand 28.10.2026.** [Digitales Rezeptbuch öffnen](https://stryker-max.github.io/digitales-rezeptbuch/).
+**Stand 30.10.2026.** [Digitales Rezeptbuch öffnen](https://stryker-max.github.io/digitales-rezeptbuch/).
 
-Die statische React-Webseite nutzt jetzt eine geschützte API und einen getrennten Abo-Worker auf Neon Free. GitHub selbst führt keine KI-Aufträge aus. Nach privater Anmeldung: Foto/PDF auswählen, ausdrücklich zur Übertragung freigeben und automatisch ausgefülltes Rezept prüfen und bestätigen. Eine freiwillige dauerhafte Dateifreigabe ermöglicht den Ablauf ab dem nächsten ausgewählten Foto ohne erneute Übertragungsfrage. Keine manuelle Abschrift und kein API-Bezahlzugang. Für den Eigentümer ist einmal die persönliche Passwort-Einrichtung über einen privaten Link nötig. [Betrieb und Grenzen](ONLINE-BETRIEB.md).
+Die statische React-Webseite nutzt jetzt eine geschützte API und einen getrennten Abo-Worker auf Neon Free. GitHub selbst führt keine KI-Aufträge aus. Nach privater Anmeldung: Foto/PDF auswählen, ausdrücklich zur Übertragung freigeben und automatisch ausgefülltes Rezept prüfen und bestätigen. Eine freiwillige dauerhafte Dateifreigabe ermöglicht den Ablauf ab dem nächsten ausgewählten Foto ohne erneute Übertragungsfrage. Keine manuelle Abschrift und kein API-Bezahlzugang. Eigene E-Mail-/Passwortkonten: Inhaber einmal über den privaten Einrichtungslink, Partnerin über „Mein Konto → Partner einladen“. Danach normale Anmeldung, optional Face ID. [Betrieb und Grenzen](ONLINE-BETRIEB.md).
 
-Neue bestätigte KI-Rezepte samt Originalen werden auf weiteren angemeldeten Geräten nach Archiv-/Hashprüfung ergänzt. Bereits vorhandene lokale Daten bleiben erhalten; sie werden nicht still hochgeladen. Plan, Einkauf und persönliche Metadaten bleiben gerätelokal. Vollständiger Export und bewusster Wiederimport bleiben unverändert nutzbar. Regelmäßig unabhängig sichern.
+Neue bestätigte KI-Rezepte samt Originalen werden auf weiteren angemeldeten Geräten nach Archiv-/Hashprüfung ergänzt. Bereits vorhandene lokale Daten bleiben erhalten; sie werden nicht still hochgeladen. Plan und Einkauf werden zwischen den eigenen Haushaltskonten abgeglichen. Persönliche Metadaten, Favoriten und Kochstand bleiben gerätelokal. Vollständiger Export und bewusster Wiederimport bleiben unverändert nutzbar. Regelmäßig unabhängig sichern.
 
 ## Build und Datenschutz
 
@@ -14,7 +14,7 @@ Neue bestätigte KI-Rezepte samt Originalen werden auf weiteren angemeldeten Ger
 
 ## Offline und iPhone/iPad
 
-In Safari öffnen, nach Wunsch zum Home-Bildschirm hinzufügen. Einmal eigenen Code oder Passwort ohne Mindestlänge/Zeichenregeln festlegen, dann auf dem iPhone „Face ID / Passkey einrichten“ wählen. Weitere Anmeldungen per Passkey oder Code/Passwort. „Offline-Paket prüfen“ kontrolliert App-Dateien und gespeicherte Original-Prüfsummen. Bereits gespeicherte Rezepte lassen sich danach offline kochen; neue KI-Erkennung braucht Internet. Updates bewusst übernehmen, nicht während laufender Kochschritte. Browser können lokale Daten trotzdem löschen.
+In Safari öffnen, nach Wunsch zum Home-Bildschirm hinzufügen. Mit eigener E-Mail/Passwort anmelden und bei Bedarf unter „Mein Konto“ Face ID aktivieren. App-Dateien werden im Hintergrund gespeichert, neue Versionen bei sicherem Öffnen/Zurückkehren übernommen. Keine technischen Offline-/Update-Schaltflächen nötig. Bereits gespeicherte Rezepte lassen sich offline kochen; neue KI-Erkennung braucht Internet. Kochschritte und laufende Eingaben werden nicht für Updates unterbrochen. Browser können lokale Daten trotzdem löschen.
 
 Echte Servererkennung mit künstlichem PNG/PDF und 390-Pixel-Testbrowser sind geprüft. Eine tatsächliche Kamera-/Installation-/Offline-Abnahme auf iPhone und iPad steht noch aus; HEIC/HEIF ist noch nicht unterstützt.
 

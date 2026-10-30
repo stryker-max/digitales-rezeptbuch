@@ -8,7 +8,7 @@ test("GitHub Pages subpath supports images, archive restore and offline cooking 
   page.on("request", (request) => requests.push(request.url()));
   await page.setViewportSize({ width: 390, height: 1000 });
   await page.goto("./");
-  await page.getByRole("button", { name: "Offline-Paket prüfen", exact: true }).waitFor();
+  await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
   const background = await page.locator(".hero-photo").evaluate((element) => getComputedStyle(element).backgroundImage);
   expect(background).toContain("/digitales-rezeptbuch/beispielgerichte.webp");
   await page.getByRole("button", { name: "Rezept hinzufügen", exact: true }).click();
@@ -27,8 +27,7 @@ test("GitHub Pages subpath supports images, archive restore and offline cooking 
   const download = await downloading;
   const archive = await page.evaluate((url) => fetch(url).then((r) => r.json()), download.url());
   expect(archive.version).toBe(2); expect(archive.recipes[0].title).toBe("Synthetischer Pages-Test");
-  await page.getByRole("button", { name: "Offline-Paket prüfen", exact: true }).click();
-  await expect(page.getByText(/Offline geprüft: App und 1 eigene Rezepte/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Offline-Paket prüfen", exact: true })).toHaveCount(0);
   await context.setOffline(true); await page.reload();
   await expect(page.getByRole("heading", { name: "Synthetischer Pages-Test", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Ansehen", exact: true }).first().click();

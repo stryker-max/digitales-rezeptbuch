@@ -1,120 +1,132 @@
 "use client";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { BookOpen, Eye, EyeOff, UserRound, X } from "lucide-react";
 import { browserSupportsWebAuthn, startAuthentication, startRegistration, type PublicKeyCredentialCreationOptionsJSON, type PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
+import { QRCodeSVG } from "qrcode.react";
 import { remoteApiBase } from "@/lib/deployment";
 import { apiFetch, remoteSessionEvent, remoteSessionKey } from "@/lib/remote-api";
-import { QRCodeSVG } from "qrcode.react";
 import { saveSetup, loadSetup, forgetSetup, validSetup } from "@/lib/setup-access";
+import { OfflineStatus } from "./OfflineStatus";
 
+type User = { id: string | null; email: string | null; name: string; role: "owner" | "member" };
 const tabStorage = { getItem: (key: string) => sessionStorage.getItem(key), setItem: (key: string, value: string) => sessionStorage.setItem(key, value), removeItem: (key: string) => sessionStorage.removeItem(key) };
+const inviteKey = "digitales-rezeptbuch-invite-v1";
 class AccessError extends Error { constructor(message: string, readonly code?: string) { super(message); } }
-
 async function post<T>(path: string, body: unknown, headers: Record<string, string> = {}): Promise<T> {
   const response = await apiFetch(path, { method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify(body) });
-  const data = await response.json();
-  if (!response.ok) throw new AccessError(data.error ?? "Anmeldung fehlgeschlagen.", data.code);
-  return data as T;
+  const data = await response.json(); if (!response.ok) throw new AccessError(data.error ?? "Anmeldung fehlgeschlagen.", data.code); return data as T;
 }
-
 export function RemoteConnection({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState(false), [version, setVersion] = useState(0);
-  const [password, setPassword] = useState(""), [setup, setSetup] = useState("");
-  const [busy, setBusy] = useState(false), [error, setError] = useState(""), [notice, setNotice] = useState("");
-  const [passkeys, setPasskeys] = useState(false);
-  const [phase, setPhase] = useState<"checking" | "new" | "ready" | "unknown">("checking");
+  const [session, setSession] = useState(false), [user, setUser] = useState<User | null>(null), [version, setVersion] = useState(0);
+  const [name, setName] = useState(""), [email, setEmail] = useState(""), [password, setPassword] = useState(""), [visible, setVisible] = useState(false);
+  const [setup, setSetup] = useState(""), [invite, setInvite] = useState(""), [shareLink, setShareLink] = useState("");
+  const [mode, setMode] = useState<"login" | "register" | "legacy">("login"), [legacy, setLegacy] = useState(false);
+  const [busy, setBusy] = useState(false), [checking, setChecking] = useState(true), [error, setError] = useState(""), [notice, setNotice] = useState("");
+  const [passkeys, setPasskeys] = useState(false), [settings, setSettings] = useState(false), [offline, setOffline] = useState(false), [members, setMembers] = useState<User[]>([]);
   const [pageBase, setPageBase] = useState(""), [transfer, setTransfer] = useState(false);
   const inspection = useRef(0);
-  async function inspectAccess(capability: string) {
-    const current = ++inspection.current;
-    setPhase("checking");
-    try {
-      const response = await apiFetch("/api/session", { headers: capability ? { "X-Recipe-Setup": capability } : {} });
-      const data = await response.json(); if (!response.ok || typeof data.configured !== "boolean") throw new Error("Zugang konnte nicht geprüft werden. Bitte erneut versuchen.");
-      if (current !== inspection.current) return;
-      if (data.configured || (capability && data.setupValid !== true)) {
-        forgetSetup(tabStorage); setSetup(""); setTransfer(false);
-        if (!data.configured) setError("Dieser Einrichtungslink ist ungültig. Bitte deinen persönlichen Einrichtungslink öffnen.");
-      }
-      setPhase(data.configured ? "ready" : "new");
-    } catch (cause) { if (current === inspection.current) { setPhase("unknown"); setError(cause instanceof Error ? cause.message : "Privater Zugang vorübergehend nicht erreichbar."); } }
+  async function profile() {
+    const response = await apiFetch("/api/account", { cache: "no-store" });
+    if (!response.ok) return;
+    const data = await response.json(); setUser(data.user); setMembers(data.members ?? []);
   }
   useEffect(() => {
     if (!remoteApiBase) return;
-    const readSetup = () => {
-      const capability = new URLSearchParams(location.hash.slice(1)).get("setup") ?? "";
-      if (validSetup(capability)) {
-        saveSetup(tabStorage, capability);
-        setSetup(capability); history.replaceState(null, "", location.pathname + location.search);
-      }
-      const active = validSetup(capability) ? capability : loadSetup(tabStorage);
-      if (active) setSetup(active);
-      void inspectAccess(active);
+    const load = async () => {
+      const generation = ++inspection.current; setChecking(true);
+      const fragment = new URLSearchParams(location.hash.slice(1)), capability = fragment.get("setup") ?? "", invitation = fragment.get("invite") ?? "";
+      if (validSetup(capability)) saveSetup(tabStorage, capability);
+      if (validSetup(invitation)) { try { sessionStorage.setItem(inviteKey, invitation); } catch {} }
+      if (fragment.has("setup") || fragment.has("invite")) history.replaceState(null, "", location.pathname + location.search);
+      const active = loadSetup(tabStorage); let activeInvite = "";
+      try { activeInvite = sessionStorage.getItem(inviteKey) ?? ""; } catch {}
+      if (!validSetup(activeInvite)) activeInvite = "";
+      setSetup(active); setInvite(activeInvite); setMode(active || activeInvite ? "register" : "login");
+      try {
+        const response = await apiFetch("/api/session", { headers: active ? { "X-Recipe-Setup": active } : {} });
+        const data = await response.json(); if (generation !== inspection.current) return;
+        if (!response.ok) throw new Error("Anmeldung ist gerade nicht erreichbar. Bitte erneut versuchen.");
+        setLegacy(data.configured && !data.accountsReady);
+        if (active && (data.configured || data.setupValid !== true)) { forgetSetup(tabStorage); setSetup(""); setMode(activeInvite ? "register" : "login"); if (!data.configured) setError("Der Einrichtungslink ist ungültig. Bitte den persönlichen Link verwenden."); }
+        if (localStorage.getItem(remoteSessionKey)) await profile();
+      } catch (cause) { setError(cause instanceof Error ? cause.message : "Anmeldung vorübergehend nicht erreichbar."); }
+      finally { if (generation === inspection.current) setChecking(false); }
     };
-    setPageBase(location.origin + location.pathname);
-    readSetup(); window.addEventListener("hashchange", readSetup);
-    setPasskeys(browserSupportsWebAuthn());
-    const changed = () => { setSession(Boolean(localStorage.getItem(remoteSessionKey))); setVersion(v => v + 1); };
-    changed(); window.addEventListener(remoteSessionEvent, changed);
-    return () => { inspection.current++; window.removeEventListener(remoteSessionEvent, changed); window.removeEventListener("hashchange", readSetup); };
+    setPageBase(location.origin + location.pathname); setPasskeys(browserSupportsWebAuthn());
+    const changed = () => { setSession(Boolean(localStorage.getItem(remoteSessionKey))); setVersion(value => value + 1); };
+    const refresh = () => { if (localStorage.getItem(remoteSessionKey)) void profile(); };
+    changed(); void load(); window.addEventListener("hashchange", load); window.addEventListener(remoteSessionEvent, changed); window.addEventListener("online", refresh); window.addEventListener("focus", refresh);
+    return () => { inspection.current++; window.removeEventListener("hashchange", load); window.removeEventListener(remoteSessionEvent, changed); window.removeEventListener("online", refresh); window.removeEventListener("focus", refresh); };
   }, []);
-  function remember(data: { session: string }) {
+  async function remember(data: { session: string; user?: User }) {
     if (typeof data.session !== "string" || data.session.length > 200) throw new Error("Ungültige Anmeldeantwort.");
-    inspection.current++; localStorage.setItem(remoteSessionKey, data.session); forgetSetup(tabStorage); setPassword(""); setSetup(""); setTransfer(false); setPhase("ready"); window.dispatchEvent(new Event(remoteSessionEvent));
+    localStorage.setItem(remoteSessionKey, data.session); forgetSetup(tabStorage); try { sessionStorage.removeItem(inviteKey); } catch {}
+    setSetup(""); setInvite(""); setTransfer(false); setPassword(""); setOffline(false); setMode("login");
+    if (data.user) setUser(data.user); window.dispatchEvent(new Event(remoteSessionEvent)); await profile();
   }
+  const complete = session && user?.id === null;
+  const registering = mode === "register" || complete;
   async function connect() {
     setBusy(true); setError(""); setNotice("");
-    try { remember(await post<{ session: string }>(`/api/session${setup ? "?setup=1" : ""}`, { password }, setup ? { "X-Recipe-Setup": setup } : {})); }
-    catch (cause) {
-      if (cause instanceof AccessError && cause.code === "SETUP_REQUIRED") setPhase("new");
-      if (cause instanceof AccessError && ["ALREADY_CONFIGURED", "SETUP_INVALID"].includes(cause.code ?? "")) { forgetSetup(tabStorage); setSetup(""); setTransfer(false); setPhase(cause.code === "ALREADY_CONFIGURED" ? "ready" : "new"); }
-      setError(cause instanceof Error ? cause.message : "Privater Zugang nicht erreichbar.");
-    }
+    try {
+      if (mode === "legacy" && !complete) await remember(await post("/api/session", { password }));
+      else {
+        if (registering && !setup && !invite && !complete) throw new Error("Dieses Rezeptbuch ist privat. Nutze die Einladung deines Haushalts oder den persönlichen Einrichtungslink.");
+        await remember(await post("/api/account", { action: registering ? (invite ? "join" : "register-owner") : "login", email, password, name, ...(invite ? { invite } : {}) }, setup ? { "X-Recipe-Setup": setup } : {}));
+      }
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Anmeldung fehlgeschlagen."); if (cause instanceof AccessError && cause.code === "USE_ACCOUNT") { setLegacy(false); setMode("login"); } }
     finally { setBusy(false); }
   }
-  async function usePasskey(registering: boolean) {
+  async function usePasskey(register: boolean) {
     setBusy(true); setError(""); setNotice("");
     try {
-      if (registering) {
+      if (register) {
         const data = await post<{ challengeId: string; options: PublicKeyCredentialCreationOptionsJSON }>("/api/passkey", { action: "register-options" });
-        const credential = await startRegistration({ optionsJSON: data.options });
-        await post("/api/passkey", { action: "register-verify", challengeId: data.challengeId, credential });
-        setNotice("Passkey eingerichtet. Beim nächsten Anmelden kannst du Face ID oder die Entsperrung deines Geräts verwenden.");
+        const credential = await startRegistration({ optionsJSON: data.options }); await post("/api/passkey", { action: "register-verify", challengeId: data.challengeId, credential }); setNotice("Face ID ist eingerichtet.");
       } else {
         const data = await post<{ challengeId: string; options: PublicKeyCredentialRequestOptionsJSON }>("/api/passkey", { action: "login-options" });
-        const credential = await startAuthentication({ optionsJSON: data.options });
-        remember(await post<{ session: string }>("/api/passkey", { action: "login-verify", challengeId: data.challengeId, credential }));
+        const credential = await startAuthentication({ optionsJSON: data.options }); await remember(await post("/api/passkey", { action: "login-verify", challengeId: data.challengeId, credential }));
       }
-    } catch (cause) {
-      const name = cause && typeof cause === "object" && "name" in cause ? cause.name : "";
-      setError(name === "NotAllowedError" ? "Passkey abgebrochen oder auf diesem Gerät nicht verfügbar. Dein Code oder Passwort funktioniert weiterhin." : cause instanceof Error ? cause.message : "Passkey nicht verfügbar.");
-    } finally { setBusy(false); }
+    } catch (cause) { const cancelled = cause && typeof cause === "object" && "name" in cause && cause.name === "NotAllowedError"; setError(cancelled ? "Anmeldung abgebrochen. Du kannst dein Passwort verwenden." : cause instanceof Error ? cause.message : "Face ID ist nicht verfügbar."); }
+    finally { setBusy(false); }
   }
-  return <>{remoteApiBase && <div className="recipe-app"><div className="app remote-access"><section className="muted-panel metadata" aria-label="Privater Online-Zugang">
-    {session ? <>
-      <div className="actions"><span>Privates Rezeptbuch verbunden</span><button className="button" onClick={() => { localStorage.removeItem(remoteSessionKey); setNotice(""); setError(""); window.dispatchEvent(new Event(remoteSessionEvent)); }}>Dieses Gerät abmelden</button></div>
-      {passkeys && <><button className="button" disabled={busy} onClick={() => void usePasskey(true)}>{busy ? "Einen Moment …" : "Face ID / Passkey einrichten"}</button><p className="small">Einmal einrichten, danach ohne Code anmelden. Auf dem iPhone mit Face ID, auf anderen Geräten mit deren Entsperrung.</p></>}
-    </> : phase === "checking" ? <p role="status">Dein Zugang wird geprüft …</p> : !setup && phase === "new" ? <>
-      <h2>Dein Rezeptbuch wartet auf die Einrichtung</h2>
-      <p>Es ist noch kein Code festgelegt. Öffne deinen persönlichen Einrichtungslink und wähle dort deinen Code. Der normale App-Link ist für die spätere Anmeldung.</p>
-      <button className="button" onClick={() => { setError(""); void inspectAccess(loadSetup(tabStorage)); }}>Einrichtung erneut prüfen</button>
-    </> : <>
-      <h2>{setup ? "Dein privates Rezeptbuch einrichten" : "Dein privates Rezeptbuch öffnen"}</h2>
-      <p>{setup ? "Wähle deinen Code oder dein Passwort. Danach kannst du Face ID einrichten." : "Mit Face ID oder deinem Code anmelden. Dieses Gerät merkt sich deinen Zugang."}</p>
-      {!setup && passkeys && <><button className="button primary" disabled={busy} onClick={() => void usePasskey(false)}>{busy ? "Einen Moment …" : "Mit Face ID / Passkey öffnen"}</button><p className="small">Für einen bereits eingerichteten Passkey. Alternativ:</p></>}
-      <form onSubmit={event => { event.preventDefault(); void connect(); }}>
-        <label>Dein Code oder Passwort<input type="password" autoComplete={setup ? "new-password" : "current-password"} maxLength={200} required value={password} onChange={event => setPassword(event.target.value)} /></label>
-        {setup && <p className="small">Zum Beispiel ein 6-stelliger Code. Keine Mindestlänge oder Zeichenregeln.</p>}
-        <button className="button primary" disabled={busy}>{busy ? "Verbinden …" : setup ? "Festlegen und öffnen" : "Mit Code oder Passwort öffnen"}</button>
-      </form>
-      {setup && pageBase && <div className="setup-transfer">
-        <button className="button" disabled={busy} onClick={() => setTransfer(value => !value)}>{transfer ? "QR-Code schließen" : "Am iPhone / iPad einrichten"}</button>
-        {transfer && <><p>Scanne diesen QR-Code mit der Kamera deines iPhones oder iPads. Dort deinen Code festlegen, danach Face ID einrichten.</p>
-          <QRCodeSVG value={`${pageBase}#setup=${setup}`} size={240} marginSize={4} level="M" title="Privater Einrichtungslink für dein Rezeptbuch" />
-          <p className="small">Privater Einrichtungslink – nur auf deinen Geräten verwenden. Die Einrichtung ist nur einmal möglich.</p>
-          <button className="button" onClick={async () => { try { await navigator.clipboard.writeText(`${pageBase}#setup=${setup}`); setNotice("Privater Einrichtungslink kopiert."); } catch { setError("Kopieren nicht verfügbar. Bitte den QR-Code verwenden."); } }}>Einrichtungslink kopieren</button>
-        </>}
-      </div>}
+  async function logout() {
+    try { await post("/api/account", { action: "logout" }); } catch {}
+    localStorage.removeItem(remoteSessionKey); setUser(null); setSettings(false); setShareLink(""); setError(""); setNotice(""); window.dispatchEvent(new Event(remoteSessionEvent));
+  }
+  async function invitePartner() {
+    setBusy(true); setError("");
+    try { const result = await post<{ invite: string }>("/api/account", { action: "invite" }); setShareLink(`${pageBase}#invite=${result.invite}`); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : "Einladung konnte nicht erstellt werden."); } finally { setBusy(false); }
+  }
+  const notifications = <>{error && <p className="auth-error" role="alert">{error}</p>}{notice && <p className="auth-notice" role="status">{notice}</p>}</>;
+  const qr = (link: string) => <div className="invite-share"><QRCodeSVG value={link} size={224} marginSize={4} title="Private Einladung" /><p>Auf dem anderen Gerät scannen oder den Link persönlich weitergeben.</p><button type="button" className="button" onClick={async () => { try { await navigator.clipboard.writeText(link); setNotice("Link kopiert."); } catch { setError("Bitte den QR-Code verwenden."); } }}>Link kopieren</button></div>;
+  if (!remoteApiBase) return <>{children}</>;
+  if ((!session || complete) && !offline) return <div className="recipe-app auth-page"><div className="app auth-card">
+    <div className="auth-brand"><span className="brand-mark"><BookOpen size={25} /></span><span>Digitales Rezeptbuch</span></div>
+    {checking ? <p role="status">Einen Moment …</p> : <>
+      <h1>{complete ? "Dein Konto vervollständigen" : registering ? (invite ? "Zusammen kochen" : "Konto erstellen") : "Willkommen zurück"}</h1>
+      <p className="auth-subtitle">{registering ? "Eigener Login. Euer gemeinsames Rezeptbuch." : "Melde dich bei eurem Rezeptbuch an."}</p>
+      {registering && !setup && !invite && !complete ? <p>Du brauchst eine Einladung zu eurem Rezeptbuch. Die andere Person findet sie unter „Mein Konto → Partner einladen“.</p> : <form className="auth-form" onSubmit={event => { event.preventDefault(); void connect(); }}>
+        {registering && <label>Dein Name<input autoComplete="name" required maxLength={80} value={name} onChange={event => setName(event.target.value)} /></label>}
+        {mode !== "legacy" || complete ? <label>E-Mail<input type="email" autoComplete="username" autoCapitalize="none" required maxLength={254} value={email} onChange={event => setEmail(event.target.value)} /></label> : null}
+        <label>{mode === "legacy" && !complete ? "Bisheriger Code" : "Passwort"}<span className="password-field"><input type={visible ? "text" : "password"} autoComplete={registering ? "new-password" : "current-password"} required maxLength={200} value={password} onChange={event => setPassword(event.target.value)} /><button type="button" className="password-toggle" aria-label={visible ? "Passwort ausblenden" : "Passwort anzeigen"} onClick={() => setVisible(value => !value)}>{visible ? <EyeOff size={21} /> : <Eye size={21} />}</button></span></label>
+        <button className="button primary auth-submit" disabled={busy}>{busy ? "Einen Moment …" : registering ? (invite ? "Einladung annehmen" : "Konto erstellen") : "Anmelden"}</button>
+      </form>}
+      {!registering && mode !== "legacy" && passkeys && <><div className="auth-divider">oder</div><button className="button auth-submit" disabled={busy} onClick={() => void usePasskey(false)}>Mit Face ID anmelden</button></>}
+      {notifications}
+      <div className="auth-links">{!complete && <button className="text-button" onClick={() => { setMode(registering || mode === "legacy" ? "login" : "register"); setError(""); }}>{registering || mode === "legacy" ? "Zur Anmeldung" : "Noch kein Konto?"}</button>}{legacy && !registering && mode !== "legacy" && <button className="text-button" onClick={() => { setMode("legacy"); setError(""); }}>Bisherigen Code verwenden</button>}</div>
+      {setup && <details className="auth-transfer"><summary>Auf dem iPhone oder iPad fortsetzen</summary>{qr(`${pageBase}#setup=${setup}`)}</details>}
     </>}
-    {error && <p role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}
-  </section></div></div>}<div key={version}>{children}</div></>;
+    <button className="text-button auth-offline" onClick={() => setOffline(true)}>Gespeicherte Rezepte ohne Anmeldung öffnen</button>
+    <OfflineStatus cooking={busy || Boolean(password || email || name)} />
+  </div></div>;
+  return <><div className="recipe-app"><div className="account-bar" data-testid="account-ready"><span>{session ? `${user?.name ?? "Mein Konto"} · Unser Rezeptbuch` : "Gespeicherte Rezepte"}</span><button className="text-button" onClick={() => { if (!session) { setOffline(false); return; } setSettings(value => !value); }}><UserRound size={19} />{session ? "Mein Konto" : "Anmelden"}</button></div>
+    {settings && <section className="app account-settings"><div className="section-line"><h2>Unser Haushalt</h2><button className="icon-button" aria-label="Kontoeinstellungen schließen" onClick={() => setSettings(false)}><X size={20} /></button></div>
+      <p>{user?.email}</p><p className="sub">Rezepte, Wochenplan und Einkaufsliste nutzt ihr gemeinsam.</p>
+      {members.map(member => <div className="member-row" key={member.id}><span>{member.name}<small>{member.email}</small></span>{member.role === "owner" ? <span className="small">Inhaber</span> : <button className="text-button" onClick={async () => { if (!window.confirm("Diesen Zugang zum gemeinsamen Rezeptbuch entfernen? Eure Rezepte bleiben erhalten.")) return; try { await post("/api/account", { action: "remove-member", id: member.id }); await profile(); } catch { setError("Zugang konnte nicht entfernt werden."); } }}>Zugang entfernen</button>}</div>)}
+      <div className="actions">{user?.role === "owner" && user.id && <button className="button" disabled={busy} onClick={() => void invitePartner()}>Partner einladen</button>}{passkeys && <button className="button" disabled={busy} onClick={() => void usePasskey(true)}>Face ID aktivieren</button>}<button className="button" onClick={() => void logout()}>Abmelden</button></div>
+      {shareLink && qr(shareLink)}{notifications}
+    </section>}
+  </div><div key={version}>{children}</div></>;
 }
